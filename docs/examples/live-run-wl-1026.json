@@ -1,0 +1,12 @@
+{
+  "ticket_id": "WL-1026",
+  "action": "escalate",
+  "team": "Payments escalation team",
+  "priority": "high",
+  "sentiment": "frustrated",
+  "summary": "Customer Maarten reports being charged twice and demands same-day resolution, threatening to file a complaint. Duplicate charge is unverified (OPEN) pending billing record review.",
+  "customer_reply": "Hi Maarten,\n\nThank you for reaching out, and I'm sorry for the frustration this has caused. I understand how concerning it is to see a duplicate charge, especially with time pressure on your end.\n\nI want to be upfront with you: I don't have visibility into the billing details from here, so I can't confirm what happened with your charge yet (status: OPEN). A colleague from our billing team will review your account and get back to you with the specifics as soon as possible.\n\nWe take this seriously and appreciate your patience while we look into it.\n\nBest regards,\nSupport Team",
+  "risk_note": "RISK NOTE — Ticket WL-1026 (Customer: Maarten)\n\n- Complaint risk: HIGH. Customer explicitly threatens to \"file a complaint\" if not resolved today — treat as an active complaint-risk signal regardless of outcome.\n- Urgency: HIGH (self-declared same-day deadline). Customer-stated urgency, not yet validated against SLA policy.\n- Duplicate charge claim: UNVERIFIED — OPEN. No billing/payment records reviewed yet to confirm a duplicate transaction occurred.\n- Escalation likelihood: Appears elevated given explicit complaint threat + urgency language, but formal escalation criteria (e.g., repeat contact, dollar amount, prior history) have not been checked — OPEN, recommend human judgment call.\n- Customer risk profile (repeat contact history, account standing, prior chargebacks): OPEN — not available in ticket payload.\n- Charge amount/currency and transaction dates: OPEN — not provided, needed to confirm duplication.\n- Payment method / processor involved: OPEN.\n\nEvidence a human should check before acting:\n1. Billing/payment gateway records for two matching charges (amount, timestamp, transaction IDs).\n2. Customer account history for prior complaints or disputes.\n3. SLA/escalation policy to determine if \"today\" deadline and complaint threat meet formal escalation threshold.\n4. Any existing open tickets/duplicate submissions from this customer.\n\nNo refund, escalation, or logging action has been taken. This note is for human review only.",
+  "draft_only": true,
+  "human_approval_required": true
+}

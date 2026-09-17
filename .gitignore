@@ -1,0 +1,12 @@
+node_modules/
+.env
+.env.*
+!.env.example
+participant-output/*
+!participant-output/.gitkeep
+# per-ticket memory is local run history; team lessons are committed
+memory/*.md
+!memory/MEMORY.md
+!memory/README.md
+.claude/settings.local.json
+coverage/
