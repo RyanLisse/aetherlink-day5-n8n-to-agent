@@ -1,16 +1,15 @@
 /**
- * agent.ts — LESSON 3b · v2: + tools (two specialist subagents)
+ * agent.ts — LESSON 3c · v3: the four fundamentals on the Claude Agent SDK
  * ---------------------------------------------------------------------------
  *
- *   ┌─────────────────── n8n AI Agent node ───────────────────┐
- *   │ System Message │ Prompt │ ai_tool ×2  │ ai_languageModel │   (no memory yet)
- *   └───────┬────────┴───┬────┴──────┬──────┴────────┬─────────┘
- *           ▼            ▼           ▼               ▼
- *   options.systemPrompt prompt  options.agents  options.model
- *                               + tools:[Agent]
- *                                 (tools.ts)
- *
- * → next: Lesson 3c (memory)
+ *   ┌────────────────────────── n8n AI Agent node ──────────────────────────┐
+ *   │ System Message │ Prompt │ ai_tool ×2  │ ai_memory   │ ai_languageModel │
+ *   └───────┬────────┴───┬────┴──────┬──────┴──────┬──────┴────────┬─────────┘
+ *           ▼            ▼           ▼             ▼               ▼
+ *   options.systemPrompt prompt  options.agents  <memory> in    options.model
+ *     (prompts.ts)   (prompts.ts) + tools:[Agent] prompt +      (runtime.ts)
+ *                                  (tools.ts)    appendRun
+ *                                                (memory.ts)
  *
  * `query()` IS the agent loop (the same one Claude Code runs): the model
  * calls the Agent tool, the SDK runs the subagent, feeds the result back,
@@ -18,6 +17,7 @@
  * After the loop: validate → route (router.ts) = n8n Code + Switch.
  */
 import { DECISION_SCHEMA, fail, ok, type Result, type RoutedDraft, type Ticket } from "./contract.js";
+import { appendRun, loadMemory, renderMemory, type MemoryStore } from "./memory.js";
 import { COORDINATOR_SYSTEM, buildTriagePrompt } from "./prompts.js";
 import { parseJson, routeDecision, validateDecision } from "./router.js";
 import type { AgentEvent, ContentBlock, QueryFn } from "./runtime.js";
@@ -34,6 +34,11 @@ export interface AgentDeps {
   readonly query: QueryFn;
   readonly model: string | undefined;
   readonly modelLabel: string;
+  readonly memory: MemoryStore;
+  /** Injected clock → deterministic tests. */
+  readonly now?: () => Date;
+  /** Set false for a dry run that must not touch memory files. */
+  readonly writeMemory?: boolean;
   /** Called for every streamed message — the CLI prints progress like the SDK quickstart. */
   readonly onMessage?: (message: AgentEvent) => void;
   /** Loop budget: how many turns the coordinator may take before it must answer. */
@@ -147,12 +152,16 @@ const collect = async (
 };
 
 export const runTriage = async (ticket: Ticket, deps: AgentDeps): Promise<AgentRun> => {
+  const now = deps.now ?? (() => new Date());
   const maxTurns = deps.maxTurns ?? DEFAULT_MAX_TURNS;
+
+  // Fundamental #4 · MEMORY (read)
+  const memory = await loadMemory(deps.memory, ticket.ticket_id);
 
   // Fundamentals #1 system · #2 prompt · #3 tools → the Claude Agent SDK loop
   const events = await collect(
     deps.query({
-      prompt: buildTriagePrompt(ticket),
+      prompt: `${buildTriagePrompt(ticket)}\n\n${renderMemory(memory)}`,
       options: {
         systemPrompt: COORDINATOR_SYSTEM,
         tools: [...COORDINATOR_TOOLS],
@@ -218,5 +227,13 @@ export const runTriage = async (ticket: Ticket, deps: AgentDeps): Promise<AgentR
   if (!decision.ok) return { ...base, result: decision };
 
   // n8n "Switch" + action Set nodes
-  return { ...base, result: ok(routeDecision(decision.value)) };
+  const draft = routeDecision(decision.value);
+
+  // Fundamental #4 · MEMORY (write) — only after the contract passed.
+  const memoryFile =
+    deps.writeMemory === false
+      ? undefined
+      : await appendRun(deps.memory, draft, { at: now().toISOString(), model: deps.modelLabel });
+
+  return { ...base, result: ok(draft), ...(memoryFile ? { memoryFile } : {}) };
 };

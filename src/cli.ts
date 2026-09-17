@@ -14,6 +14,7 @@ import { mkdir, readFile, writeFile } from "node:fs/promises";
 import { dirname } from "node:path";
 import { parseArgs } from "node:util";
 import { runTriage } from "./agent.js";
+import { memoryStore } from "./memory.js";
 import { resolveRuntime, type AgentEvent } from "./runtime.js";
 import { parseJson, parseTicket } from "./router.js";
 
@@ -55,6 +56,12 @@ const main = async (): Promise<number> => {
     return 1;
   }
 
+  const maxTurns = values["max-turns"] === undefined ? undefined : Number(values["max-turns"]);
+  if (maxTurns !== undefined && !(Number.isInteger(maxTurns) && maxTurns >= 1)) {
+    console.error(`FAIL --max-turns must be a whole number ≥ 1 (got ${values["max-turns"]})`);
+    return 1;
+  }
+
   const runtime = resolveRuntime(values.model);
   console.log(`▶ ticket ${ticket.value.ticket_id} · runtime ${runtime.label}`);
 
@@ -62,8 +69,10 @@ const main = async (): Promise<number> => {
     query: runtime.query,
     model: runtime.model,
     modelLabel: runtime.label,
+    memory: memoryStore(),
+    writeMemory: !values["dry-run"],
     onMessage: printMessage,
-    ...(values["max-turns"] ? { maxTurns: Number(values["max-turns"]) } : {}),
+    ...(maxTurns !== undefined ? { maxTurns } : {}),
     ...(values["max-budget-usd"] ? { maxBudgetUsd: Number(values["max-budget-usd"]) } : {}),
   });
   console.log(`loop: ${run.turns ?? "?"} turn(s) used · maxTurns ${run.maxTurns}`);
@@ -84,6 +93,7 @@ const main = async (): Promise<number> => {
     await writeFile(values.out, `${output}\n`, "utf8");
     console.log(`\nsaved ${values.out}`);
   }
+  if (run.memoryFile) console.log(`memory appended → ${run.memoryFile}`);
   if (run.costUsd) console.log(`estimated cost: $${run.costUsd.toFixed(4)}`);
   console.log("\nPASS contract · OPEN: a human must review this draft before any action.");
   return 0;
