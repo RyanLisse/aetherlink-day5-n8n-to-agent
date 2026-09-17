@@ -22,6 +22,14 @@ fundamentals every agent has.
 
 ## Setup
 
+### Follow the workshop route
+
+Keep the [Day 5 presentation](https://aetherlink-training.ryanlisse.chatgpt.site/?squad=1&day=5#1)
+and the [attendee route card](https://github.com/RyanLisse/aetherlink-agent-lab/blob/main/ATTENDEE-ROUTE.md)
+open. The facilitator points to the next page. This tutorial is cloned once
+when the Claude Code translation starts; each later phase uses a branch in the
+same checkout. No new download is needed for each lesson.
+
 1. **Clone and branch**
 
    ```bash

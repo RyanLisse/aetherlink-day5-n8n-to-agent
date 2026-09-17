@@ -39,6 +39,15 @@ flowchart LR
 
 ## Quick start
 
+## Workshop route
+
+Open the [public Day 5 deck](https://aetherlink-training.ryanlisse.chatgpt.site/?squad=1&day=5#1)
+and the [attendee route card](https://github.com/RyanLisse/aetherlink-agent-lab/blob/main/ATTENDEE-ROUTE.md)
+before the session. The route card tells you which page is next and when to
+clone this tutorial. Clone this repository once when the facilitator starts
+the Claude Code translation; switch to the lesson branch named on the slide.
+Do not download ZIPs, bundles, credentials or customer data.
+
 ```bash
 git clone https://github.com/RyanLisse/aetherlink-day5-n8n-to-agent.git
 cd aetherlink-day5-n8n-to-agent

@@ -6,6 +6,8 @@ You are helping a participant rebuild an n8n support-triage workflow as an
 agent on the Claude Agent SDK (`@anthropic-ai/claude-agent-sdk`), one SDLC
 phase per branch. Read `README.md` for the lesson
 map and `lessons/*.md` for the current lesson.
+Read `@intent.md` and `@progress.md` as the project's explicit goal and
+evidence log before changing files.
 
 ## Rules
 
