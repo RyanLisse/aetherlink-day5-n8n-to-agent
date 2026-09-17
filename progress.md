@@ -1,6 +1,6 @@
 # Progress
 
-Status: `STEP 4 · TEST — static checks verified; later phases OPEN`
+Status: `STEP 5 · DEPLOY — static checks verified; later phases OPEN`
 
 This is a **current-state board**, not a diary. Update the rows; append one
 line per run to the run log.
@@ -16,7 +16,7 @@ line per run to the run log.
 | 3b · Build · tools | `step-3b-build-tools` | `src/tools.ts` (subagents), `src/agent.ts` v2 | `VERIFIED — offline run` |
 | 3c · Build · memory | `step-3c-build-memory` | `src/memory.ts`, `src/agent.ts` v3 | `VERIFIED — offline run` |
 | 4 · Test | `step-4-test` | `test/*.test.ts`, `src/check.ts` | `VERIFIED — npm run verify` |
-| 5 · Deploy | `step-5-deploy` | `src/cli.ts`, `.claude/agents/`, CI, `templates/handoff.md` | `OPEN — next branch` |
+| 5 · Deploy | `step-5-deploy` | `src/cli.ts`, `.claude/agents/`, CI, `templates/handoff.md` | `VERIFIED — CI config; colleague reproduction OPEN` |
 | 6 · Maintain | `step-6-maintain` | this board, `memory/MEMORY.md`, feedback to `intent.md` | `OPEN — next branch` |
 
 ## Current verified state

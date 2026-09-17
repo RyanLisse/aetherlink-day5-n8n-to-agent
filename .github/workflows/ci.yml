@@ -1,0 +1,25 @@
+name: verify
+
+on:
+  push:
+  pull_request:
+
+permissions:
+  contents: read
+
+jobs:
+  verify:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: npm
+      - run: npm ci
+      - run: npm run verify
+      # Offline agent run: proves wiring only, never model quality.
+      - run: npm run triage -- fixtures/ticket.json --dry-run --out participant-output/ci-wl-1026.json
+      - run: npm run check -- --ticket fixtures/ticket.json --decision participant-output/ci-wl-1026.json
+      - name: malformed input must fail
+        run: "! npm run triage -- fixtures/ticket-malformed.json"
