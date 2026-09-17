@@ -1,6 +1,6 @@
 # Progress
 
-Status: `STEP 2 · DESIGN — static checks verified; later phases OPEN`
+Status: `STEP 3a · BUILD · system message + prompt — static checks verified; later phases OPEN`
 
 This is a **current-state board**, not a diary. Update the rows; append one
 line per run to the run log.
@@ -12,7 +12,7 @@ line per run to the run log.
 | 0 · Source | `main` | `n8n/support-triage.json`, `lessons/0-source.md` | `VERIFIED — sanitized export` |
 | 1 · Plan | `step-1-plan` | `intent.md`, this file | `VERIFIED — facilitator template` |
 | 2 · Design | `step-2-design` | `docs/design.md`, `src/contract.ts`, `src/router.ts`, `test/router.test.ts` | `VERIFIED — npm test` |
-| 3a · Build · system + prompt | `step-3a-build-prompt` | `src/prompts.ts`, `src/runtime.ts`, `src/agent.ts` v1 | `OPEN — next branch` |
+| 3a · Build · system + prompt | `step-3a-build-prompt` | `src/prompts.ts`, `src/runtime.ts`, `src/agent.ts` v1 | `VERIFIED — offline run` |
 | 3b · Build · tools | `step-3b-build-tools` | `src/tools.ts` (subagents), `src/agent.ts` v2 | `OPEN — next branch` |
 | 3c · Build · memory | `step-3c-build-memory` | `src/memory.ts`, `src/agent.ts` v3 | `OPEN — next branch` |
 | 4 · Test | `step-4-test` | `test/*.test.ts`, `src/check.ts` | `OPEN — next branch` |

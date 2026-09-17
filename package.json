@@ -11,6 +11,7 @@
   "scripts": {
     "typecheck": "tsc --noEmit",
     "test": "tsx --test test/*.test.ts",
+    "triage": "tsx src/cli.ts",
     "verify": "npm run typecheck && npm test"
   },
   "dependencies": {
