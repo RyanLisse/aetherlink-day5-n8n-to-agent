@@ -1,6 +1,7 @@
 # Claude Code — project instructions
 
-Start with `lessons/0-source.md`, then `lessons/1-plan.md`.
+@intent.md
+@progress.md
 
 You are helping a participant rebuild an n8n support-triage workflow as an
 agent on the Claude Agent SDK (`@anthropic-ai/claude-agent-sdk`), one SDLC
