@@ -1,6 +1,6 @@
 # Progress
 
-Status: `STEP 5 · DEPLOY — static checks verified; later phases OPEN`
+Status: `STEP 6 · MAINTAIN — static checks verified; your live model run is OPEN`
 
 This is a **current-state board**, not a diary. Update the rows; append one
 line per run to the run log.
@@ -17,7 +17,7 @@ line per run to the run log.
 | 3c · Build · memory | `step-3c-build-memory` | `src/memory.ts`, `src/agent.ts` v3 | `VERIFIED — offline run` |
 | 4 · Test | `step-4-test` | `test/*.test.ts`, `src/check.ts` | `VERIFIED — npm run verify` |
 | 5 · Deploy | `step-5-deploy` | `src/cli.ts`, `.claude/agents/`, CI, `templates/handoff.md` | `VERIFIED — CI config; colleague reproduction OPEN` |
-| 6 · Maintain | `step-6-maintain` | this board, `memory/MEMORY.md`, feedback to `intent.md` | `OPEN — next branch` |
+| 6 · Maintain | `step-6-maintain` | this board, `memory/MEMORY.md`, feedback to `intent.md` | `OPEN — needs your run` |
 
 ## Current verified state
 
@@ -44,4 +44,7 @@ line per run to the run log.
 
 Only write what a trace or checker actually showed.
 
-- `NONE — no validated learning yet`
+- Live smoke run: the model's structured `risk_note` was a shortened paraphrase of the Risk subagent's output → keep copying `risk_note` / `customer_reply` from the trace (already in `src/agent.ts`). Evidence: trace vs. raw output of the smoke run.
+- Live check of Lesson 3a (no subagents): the model wrote its own reply and risk note and chose `medium → investigate`; the contract still passed → a valid shape is not evidence, keep the subagent trace check.
+- Loop budget (live, 17 Sep): without subagents `maxTurns: 1` succeeded (num_turns 2); with subagents `maxTurns: 1` → `error_max_turns`, `2` and `8` succeeded (num_turns 4) → default 8, specialists 2.
+- Live smoke run: the SDK adds its own `StructuredOutput` tool call → excluded from the specialist trace check (`SDK_INTERNAL_TOOLS`).
