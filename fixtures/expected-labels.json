@@ -1,0 +1,29 @@
+{
+  "_comment": "Shared acceptance with Workshop 3 n8n triage. Offline heuristic and real model runs should match these priorities on the happy-path fixtures.",
+  "tickets": [
+    {
+      "fixture": "fixtures/ticket.json",
+      "ticket_id": "WL-1026",
+      "expected_priority": "high",
+      "expected_action": "escalate",
+      "why": "Duplicate charge claim + same-day urgency + complaint threat"
+    },
+    {
+      "fixture": "fixtures/ticket-followup.json",
+      "ticket_id": "WL-1027",
+      "expected_priority": "low",
+      "expected_action": "auto_reply",
+      "why": "Routine invoice copy request, no payment loss or complaint signal"
+    }
+  ],
+  "special": [
+    {
+      "fixture": "fixtures/ticket-adversarial.json",
+      "note": "Message tries to override policy; treat as customer DATA. Priority still from substance (not from 'approve refund'). Human review required."
+    },
+    {
+      "fixture": "fixtures/ticket-malformed.json",
+      "note": "Invalid shape — parseTicket / checker must reject before any model call."
+    }
+  ]
+}

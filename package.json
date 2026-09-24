@@ -2,7 +2,7 @@
   "name": "aetherlink-day5-n8n-to-agent",
   "version": "1.0.0",
   "private": true,
-  "description": "Day 5 tutorial \u00b7 from an n8n support-triage workflow to intent.md to an agent on the Claude Agent SDK (system prompt, prompt, subagents, markdown memory).",
+  "description": "Workshop 4 \u00b7 rebuild n8n support-triage on the Claude Agent SDK (systemPrompt, prompt, subagents, markdown memory, maxTurns) \u2014 offline dry-run.",
   "license": "MIT",
   "type": "module",
   "engines": {
@@ -11,7 +11,9 @@
   "scripts": {
     "typecheck": "tsc --noEmit",
     "test": "tsx --test test/*.test.ts",
-    "verify": "npm run typecheck && npm test"
+    "check": "tsx src/check.ts",
+    "triage": "tsx src/cli.ts",
+    "verify": "npm run typecheck && npm test && npm run check"
   },
   "dependencies": {
     "@anthropic-ai/claude-agent-sdk": "^0.3.274"

@@ -1,17 +1,7 @@
 /**
- * STARTER · contract.ts — LESSON 2 · Design — copy to src/contract.ts and fill the TODOs
+ * contract.ts — shared shapes and routes
  * ---------------------------------------------------------------------------
- * The contract is the one thing n8n and the agent MUST agree on.
- * No validation library: plain TypeScript types, one JSON Schema object for
- * the Claude Agent SDK (`options.outputFormat`), and small pure checks.
- *
- * n8n source                     →  here
- * ─────────────────────────────────────────────────────────────────────────
- * "Ticket Input" (Set node)      →  `Ticket` + `parseTicket()`
- * AI Agent "Return ONLY JSON"    →  `TriageDecision` + `DECISION_SCHEMA`
- *                                   (+ ticket_id, draft_only, human_approval_required,
- *                                    which the n8n prompt did NOT require)
- * Switch (low / medium / high)   →  `ROUTES` (lowercase, deterministic)
+ * Ticket / TriageDecision / ROUTES (low→auto_reply, medium→investigate, high→escalate).
  */
 
 // ── Enumerations ──────────────────────────────────────────────────────────
@@ -30,8 +20,8 @@ export type Action = (typeof ACTIONS)[number];
  */
 export const ROUTES = {
   low: "auto_reply",
-  medium: "auto_reply", // TODO: wrong on purpose — fix me
-  high: "auto_reply", // TODO: wrong on purpose — fix me
+  medium: "investigate",
+  high: "escalate",
 } as const satisfies Record<Priority, Action>;
 
 /** Which (fictional) team would pick up the draft — mirrors the n8n Set nodes. */
@@ -83,13 +73,28 @@ export interface RoutedDraft {
  */
 export const DECISION_SCHEMA = {
   type: "object",
-  // TODO: additionalProperties: false
-  required: ["ticket_id", "priority"], // TODO: every field of TriageDecision
+  additionalProperties: false,
+  required: [
+    "ticket_id",
+    "priority",
+    "sentiment",
+    "recommended_action",
+    "summary",
+    "customer_reply",
+    "risk_note",
+    "draft_only",
+    "human_approval_required",
+  ],
   properties: {
     ticket_id: { type: "string", minLength: 1 },
     priority: { type: "string", enum: [...PRIORITIES] },
-    // TODO: sentiment, recommended_action, summary, customer_reply, risk_note,
-    //       draft_only / human_approval_required as { type: "boolean", const: true }
+    sentiment: { type: "string", enum: [...SENTIMENTS] },
+    recommended_action: { type: "string", enum: [...ACTIONS] },
+    summary: { type: "string", minLength: 1 },
+    customer_reply: { type: "string", minLength: 1 },
+    risk_note: { type: "string", minLength: 1 },
+    draft_only: { type: "boolean", const: true },
+    human_approval_required: { type: "boolean", const: true },
   },
 } as const;
 
@@ -139,8 +144,18 @@ export const parseTicket = (raw: unknown): Result<Ticket> => {
 /** Validate an unknown value as a TriageDecision, including the routing rule. */
 export const parseDecision = (raw: unknown): Result<TriageDecision> => {
   if (!isObject(raw)) return fail(["decision: expected a JSON object"]);
-  // TODO: nonEmpty for the text fields, oneOf for the enums, isTrue for both flags,
-  //       onlyKeys(raw, DECISION_SCHEMA.required), then the ROUTES[priority] check.
-  void nonEmpty; void oneOf; void isTrue;
-  return fail(["TODO: parseDecision"]);
+  const errors = [
+    ...["ticket_id", "summary", "customer_reply", "risk_note"].flatMap((k) => nonEmpty(raw, k)),
+    ...oneOf(raw, "priority", PRIORITIES),
+    ...oneOf(raw, "sentiment", SENTIMENTS),
+    ...oneOf(raw, "recommended_action", ACTIONS),
+    ...isTrue(raw, "draft_only"),
+    ...isTrue(raw, "human_approval_required"),
+    ...onlyKeys(raw, DECISION_SCHEMA.required),
+  ];
+  if (errors.length > 0) return fail(errors);
+  const priority = raw.priority as Priority;
+  return ROUTES[priority] === raw.recommended_action
+    ? ok(raw as unknown as TriageDecision)
+    : fail([`recommended_action: priority/action conflict (${priority} must route to ${ROUTES[priority]})`]);
 };
