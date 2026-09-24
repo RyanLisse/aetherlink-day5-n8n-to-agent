@@ -43,7 +43,7 @@ describe("n8n source · what it promises", () => {
   });
 });
 
-describe("n8n source · the gaps intent.md must name", () => {
+describe("n8n source · gaps the rebuild should fix", () => {
   it("[gap] the final JSON prompt does not ask for ticket_id", () => {
     const prompt = String(byName("AI Agent")?.parameters.text);
     assert.match(prompt, /"risk_note"/);

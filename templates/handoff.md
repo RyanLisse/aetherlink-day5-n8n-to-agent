@@ -20,7 +20,7 @@ Scope or revision: `TEMPLATE`
 1. Start from `TEMPLATE — exact checkout, branch, environment, or document revision`.
 2. Run `TEMPLATE — exact read-only check or test command`.
 3. Compare `TEMPLATE — expected signal and known limitation`.
-4. Record the result at `TEMPLATE — destination recap or progress link`.
+4. Record the result at `TEMPLATE — destination recap or Proof or notes link`.
 
 Do not treat this handoff, an agent claim, or historical output as fresh evidence.
 

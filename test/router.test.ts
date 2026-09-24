@@ -1,6 +1,7 @@
 /**
- * LESSON 2 · Design tests — written BEFORE the code (TDD red → green).
- * No model, no network, no test framework beyond Node's built-in `node:test`.
+ * router.test.ts — contract and routing tests
+ * ---------------------------------------------------------------------------
+ * Pure validation and route mapping.
  */
 import assert from "node:assert/strict";
 import { describe, it } from "node:test";

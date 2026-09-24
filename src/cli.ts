@@ -1,18 +1,13 @@
 /**
- * cli.ts — LESSON 3a (given) · local, reproducible entry point — used for the Lesson 5 handoff
+ * cli.ts — npm run triage entry point
  * ---------------------------------------------------------------------------
- *   npm run triage -- fixtures/ticket.json
- *   npm run triage -- fixtures/ticket.json --dry-run          (no memory write)
- *   npm run triage -- fixtures/ticket.json --out participant-output/wl-1026.json
- *   AGENT_MODEL=sonnet npm run triage -- fixtures/ticket.json      (real Claude Agent SDK run)
- *
- * n8n equivalent: "When clicking 'Execute workflow'" + "Ticket Input".
- * Nothing is sent anywhere: the output is a draft for a human.
+ * Local reproducible CLI; offline by default.
  */
 import { mkdir, readFile, writeFile } from "node:fs/promises";
 import { dirname } from "node:path";
 import { parseArgs } from "node:util";
 import { runTriage } from "./agent.js";
+import { memoryStore } from "./memory.js";
 import { resolveRuntime, type AgentEvent } from "./runtime.js";
 import { parseJson, parseTicket } from "./router.js";
 
@@ -41,6 +36,8 @@ const main = async (): Promise<number> => {
       "dry-run": { type: "boolean", default: false },
       out: { type: "string" },
       model: { type: "string" },
+      "max-turns": { type: "string" },
+      "max-budget-usd": { type: "string" },
     },
   });
 
@@ -52,6 +49,12 @@ const main = async (): Promise<number> => {
     return 1;
   }
 
+  const maxTurns = values["max-turns"] === undefined ? undefined : Number(values["max-turns"]);
+  if (maxTurns !== undefined && !(Number.isInteger(maxTurns) && maxTurns >= 1)) {
+    console.error(`FAIL --max-turns must be a whole number ≥ 1 (got ${values["max-turns"]})`);
+    return 1;
+  }
+
   const runtime = resolveRuntime(values.model);
   console.log(`▶ ticket ${ticket.value.ticket_id} · runtime ${runtime.label}`);
 
@@ -59,8 +62,13 @@ const main = async (): Promise<number> => {
     query: runtime.query,
     model: runtime.model,
     modelLabel: runtime.label,
+    memory: memoryStore(),
+    writeMemory: !values["dry-run"],
     onMessage: printMessage,
+    ...(maxTurns !== undefined ? { maxTurns } : {}),
+    ...(values["max-budget-usd"] ? { maxBudgetUsd: Number(values["max-budget-usd"]) } : {}),
   });
+  console.log(`loop: ${run.turns ?? "?"} turn(s) used · maxTurns ${run.maxTurns}`);
 
   console.log("\n── trace (subagent calls) ──");
   run.trace.forEach((t, i) => console.log(`${i + 1}. ${t.tool}: ${t.output}`));
@@ -78,6 +86,7 @@ const main = async (): Promise<number> => {
     await writeFile(values.out, `${output}\n`, "utf8");
     console.log(`\nsaved ${values.out}`);
   }
+  if (run.memoryFile) console.log(`memory appended → ${run.memoryFile}`);
   if (run.costUsd) console.log(`estimated cost: $${run.costUsd.toFixed(4)}`);
   console.log("\nPASS contract · OPEN: a human must review this draft before any action.");
   return 0;

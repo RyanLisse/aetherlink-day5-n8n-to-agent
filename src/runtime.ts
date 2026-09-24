@@ -1,18 +1,7 @@
 /**
- * runtime.ts — LESSON 3a · which "engine" runs the agent (port + adapters)
+ * runtime.ts — SDK or offline query adapter
  * ---------------------------------------------------------------------------
- * n8n: "OpenAI Chat Model" sub-node (gpt-5-mini) + a credential picked in the UI.
- * Here: the Claude Agent SDK `query()` — the same agent loop that powers
- * Claude Code — behind a tiny port so the room can also run offline.
- *
- *   AGENT_MODEL=offline            → scripted fake (default · no key · no network)
- *   AGENT_MODEL=sonnet             → real Claude Agent SDK run (alias or full id,
- *   AGENT_MODEL=claude-sonnet-5      e.g. claude-sonnet-5). Needs ANTHROPIC_API_KEY
- *                                    exported in your shell (the SDK does not read .env).
- *
- * Hexagonal: the agent depends on `QueryFn` (port), not on the SDK directly.
- * The OFFLINE adapter is a teaching tool — its output is scripted and is
- * NEVER model evidence; progress.md must record which runtime actually ran.
+ * AGENT_MODEL=offline (default, no key) or a real Claude Agent SDK model.
  */
 import { query, type Options } from "@anthropic-ai/claude-agent-sdk";
 
@@ -44,6 +33,8 @@ export type AgentEvent =
       readonly result?: string;
       readonly structured_output?: unknown;
       readonly total_cost_usd?: number;
+      /** How many loop turns (model round-trips) the run used. */
+      readonly num_turns?: number;
     }
   | { readonly type: "system" | "other"; readonly subtype?: string };
 
@@ -59,9 +50,17 @@ export type QueryFn = (args: QueryArgs) => AsyncIterable<AgentEvent>;
 const KNOWN = new Set(["assistant", "user", "result", "system"]);
 
 export const sdkQuery: QueryFn = async function* ({ prompt, options }) {
-  for await (const message of query({ prompt, options })) {
-    // SDK messages are a superset of AgentEvent; unknown kinds become "other".
-    yield (KNOWN.has(message.type) ? message : { type: "other" }) as AgentEvent;
+  let sawResult = false;
+  try {
+    for await (const message of query({ prompt, options })) {
+      sawResult ||= message.type === "result";
+      // SDK messages are a superset of AgentEvent; unknown kinds become "other".
+      yield (KNOWN.has(message.type) ? message : { type: "other" }) as AgentEvent;
+    }
+  } catch (error) {
+    // After an error result (e.g. error_max_turns) the SDK also throws.
+    // The result message already told us why, so stop quietly.
+    if (!sawResult) throw error;
   }
 };
 
@@ -102,6 +101,18 @@ export const offlineQuery: QueryFn = async function* ({ prompt, options }) {
   yield { type: "system", subtype: "init" };
   const ticket = extractTicket(prompt);
   const subagents = Object.keys(options.agents ?? {});
+  // Scripted loop budget, mirroring what we measured on the real SDK:
+  // the smallest maxTurns that works is 2 with subagents (call them, then
+  // answer) and 1 without; the SDK then REPORTS num_turns as 4 and 2, because
+  // delivering the structured answer is an extra, uncapped round-trip.
+  const turnsNeeded = subagents.length > 0 ? 2 : 1;
+  const reported = (turns: number): number => turns * 2;
+  const maxTurns = options.maxTurns ?? Number.POSITIVE_INFINITY;
+
+  if (maxTurns < 1) {
+    yield { type: "result", subtype: "error_max_turns", num_turns: 0, total_cost_usd: 0 };
+    return;
+  }
 
   if (subagents.length > 0) {
     yield {
@@ -129,12 +140,18 @@ export const offlineQuery: QueryFn = async function* ({ prompt, options }) {
     };
   }
 
+  if (maxTurns < turnsNeeded) {
+    yield { type: "result", subtype: "error_max_turns", num_turns: reported(maxTurns), total_cost_usd: 0 };
+    return;
+  }
+
   const priority = offlinePriority(ticket.message ?? "");
   const pending = subagents.length > 0 ? "(copied from the subagent trace)" : "OPEN — no specialist was called";
   yield {
     type: "result",
     subtype: "success",
     total_cost_usd: 0,
+    num_turns: reported(turnsNeeded),
     structured_output: {
       ticket_id: ticket.ticket_id ?? "OPEN",
       priority,
