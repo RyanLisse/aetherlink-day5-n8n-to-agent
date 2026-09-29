@@ -84,6 +84,19 @@ GitHub, or a CRM. Coordinator may only use the `Agent` tool; specialists have
 no tools. Every result has `draft_only: true` and `human_approval_required: true`.
 A checker PASS is never business approval. Keys never go into files, prompts, or commits.
 
+## Interactive course
+
+`course/` is a self-contained HTML course (5 modules) that follows one ticket,
+WL-1026, through the n8n node graph and through this TypeScript agent: the
+four fundamentals, subagents, the loop budget, the contract, routes and memory.
+Quizzes, animations and code ↔ plain-English translations; no build step or
+server needed.
+
+```bash
+open course/index.html          # read it
+(cd course && bash build.sh)    # rebuild after editing course/modules/*.html
+```
+
 ## Related
 
 - [Claude Agent SDK (TypeScript)](https://github.com/anthropics/claude-agent-sdk-typescript) · [quickstart](https://code.claude.com/docs/en/agent-sdk/quickstart)
