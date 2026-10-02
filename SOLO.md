@@ -8,10 +8,10 @@ has four parts:
 - **Do** — what you change or run.
 - **Check** — how you know the step is done.
 
-This path is an optional parity bonus. It is not part of the required
-Workshop 4 lessons: those use new customer messages and a transaction workbook
-(`training-lab/w4-support-agent-sdk` in the Academy repository). This path uses
-its own fixture tickets.
+This path is an optional parity bonus. It is not part of the
+required Workshop 4 lessons. Those lessons use new customer messages
+and a transaction workbook (`training-lab/w4-support-agent-sdk` in the Academy
+repository). This path uses its own fixture tickets.
 
 Everything runs offline by default. The offline runtime is scripted, so its
 output is not model evidence. A real model run is optional and needs your own
