@@ -1,26 +1,104 @@
-# Workshop 4 · rebuild your n8n triage agent on the Claude Agent SDK
+# Rebuild an n8n triage agent on the Claude Agent SDK
 
-**AetherLink Academy · `/workshop/4` · ticket priority L/M/H (same fixture as Workshop 3)**
+In Workshop 3 you built a support-triage flow in n8n. In this project you
+rebuild the same flow as a TypeScript agent on the
+[Claude Agent SDK](https://github.com/anthropics/claude-agent-sdk-typescript).
+The agent gives each ticket a priority (`low`, `medium` or `high`), asks two
+specialist subagents for a reply draft and a risk note, and returns a draft
+that a person must review.
 
-You built a support-triage flow in n8n. Here you rebuild it as an agent on the
-[**Claude Agent SDK**](https://github.com/anthropics/claude-agent-sdk-typescript)
-— `systemPrompt` · `prompt` · tools/subagents · markdown memory · `maxTurns`.
-Offline/dry-run works without an API key.
+You can do the whole project offline. The offline runtime is a scripted fake,
+so it needs no API key and costs nothing. Its output is not model evidence.
 
-Attendee path: **[SOLO.md](SOLO.md)** (SOLO 0 → 4). Pedagogy: Uitleg → Voordoen → Zelf doen.
+Follow **[SOLO.md](SOLO.md)** for the step-by-step exercise. This README is
+the reference: setup, commands, and where things are.
 
-## Quick start
+## Prerequisites
 
-```bash
+- Node.js 22 or later (Node 24 LTS recommended). npm comes with Node.
+- Git.
+- A terminal: Terminal on macOS or Linux, PowerShell or Command Prompt on
+  Windows.
+
+The commands below work the same in all of these terminals, unless a section
+shows separate variants.
+
+## Set up
+
+```text
 git clone https://github.com/RyanLisse/aetherlink-day5-n8n-to-agent.git
 cd aetherlink-day5-n8n-to-agent
-git switch -c work/<your-name>
-npm install                            # Node 20+
-npm test                               # includes n8n source pins
-npm run triage -- fixtures/ticket.json --dry-run   # offline, no key
+npm install
+npm run verify
 ```
 
-Deck: Academy **`/workshop/4`** (alias `/lesson/workshop-4`). Do not download ZIPs, credentials, or customer data.
+`npm run verify` runs the type check, the tests and the self-check. It ends
+with:
+
+```text
+PASS self-check: 3 valid routes, 7 rejection cases
+OPEN: a human must review the draft before any action is taken
+```
+
+## Run the agent offline
+
+```text
+npm run triage -- fixtures/ticket.json --dry-run
+```
+
+The run ends with the routed draft and:
+
+```text
+PASS contract · OPEN: a human must review this draft before any action.
+```
+
+`--dry-run` means the run does not append to `memory/`. Leave it out when you
+want the agent to write a memory note for the ticket.
+
+## Run the agent with a real model (optional)
+
+A real run needs an Anthropic API key. Set the key in the terminal where you
+run the command. Never put it in a file, a prompt or a commit.
+
+macOS or Linux:
+
+```bash
+export ANTHROPIC_API_KEY=sk-ant-...
+```
+
+Windows PowerShell:
+
+```powershell
+$env:ANTHROPIC_API_KEY = "sk-ant-..."
+```
+
+Windows Command Prompt:
+
+```cmd
+set ANTHROPIC_API_KEY=sk-ant-...
+```
+
+Then choose a model with `--model`:
+
+```text
+npm run triage -- fixtures/ticket.json --dry-run --model sonnet
+```
+
+Valid values are `sonnet`, `opus`, `haiku` or a full model ID. The default is
+`offline`. A run costs a few cents. If the output says `Not logged in`, the key
+is not set in this terminal.
+
+You can also set the `AGENT_MODEL` environment variable instead of `--model`.
+
+## Check a saved draft
+
+```text
+npm run triage -- fixtures/ticket.json --dry-run --out participant-output/wl-1026.json
+npm run check -- --ticket fixtures/ticket.json --decision participant-output/wl-1026.json
+```
+
+The checker confirms the shape, the ticket ID and the route. A PASS is never
+business approval.
 
 ## The four fundamentals
 
@@ -45,60 +123,51 @@ for await (const message of query({
 })) { /* stream → trace → validate → route → memory */ }
 ```
 
-Side by side: [`docs/fundamentals.md`](docs/fundamentals.md) ·
-example run: [`docs/examples/live-run-wl-1026.json`](docs/examples/live-run-wl-1026.json).
+Side by side: [`docs/fundamentals.md`](docs/fundamentals.md). Example of a real
+run: [`docs/examples/live-run-wl-1026.json`](docs/examples/live-run-wl-1026.json).
 
-## Layout
+## Files
 
 ```text
-SOLO.md                     attendee path (0–4)
-n8n/support-triage.json     source flow (sanitized export) — parity SoT
-fixtures/                   WL-1026, WL-1027, adversarial, malformed
-fixtures/expected-labels.json   shared L/M/H acceptance with Workshop 3
-src/prompts.ts              system message + prompt
-src/tools.ts                Reply / Risk subagents
-src/memory.ts               markdown memory
-src/agent.ts                query() loop + maxTurns
-src/runtime.ts              SDK or offline fake
-src/cli.ts                  npm run triage
-src/contract.ts · router.ts types, schema, routes, checks
-src/check.ts                shape/routing checker (not business approval)
-memory/MEMORY.md            team lessons the agent reads
-.claude/agents/             same specialists as Claude Code files
-test/                       node:test suites
+SOLO.md                         step-by-step exercise
+n8n/support-triage.json         the n8n source flow (sanitized export)
+fixtures/                       WL-1026, WL-1027, adversarial, malformed
+fixtures/expected-labels.json   expected priorities, shared with Workshop 3
+src/prompts.ts                  system message and prompt
+src/tools.ts                    Reply and Risk subagents
+src/memory.ts                   markdown memory
+src/agent.ts                    query() loop and maxTurns
+src/runtime.ts                  real SDK or offline fake
+src/cli.ts                      npm run triage
+src/contract.ts, src/router.ts  types, schema, routes, checks
+src/check.ts                    shape and routing checker
+memory/MEMORY.md                team lessons the agent reads
+.claude/agents/                 the same specialists as Claude Code files
+test/                           node:test suites
+course/                         interactive HTML course
 ```
-
-## Runtimes
-
-| `AGENT_MODEL` | Needs | Use |
-| --- | --- | --- |
-| `offline` (default) | nothing | whole room; scripted, **not model evidence** |
-| `sonnet`, `opus`, `haiku`, or a full model id | `ANTHROPIC_API_KEY` in the shell | real SDK run (a few cents) |
-
-The SDK reads the key from the environment and does not load `.env` files.
 
 ## Safety
 
-Fictional data only. Nothing is sent, refunded, escalated, or written to n8n,
-GitHub, or a CRM. Coordinator may only use the `Agent` tool; specialists have
-no tools. Every result has `draft_only: true` and `human_approval_required: true`.
-A checker PASS is never business approval. Keys never go into files, prompts, or commits.
+All data is fictional. Nothing is sent, refunded, escalated, or written to n8n,
+GitHub or a CRM. The coordinator can only use the `Agent` tool; the specialists
+have no tools. Every result has `draft_only: true` and
+`human_approval_required: true`.
 
 ## Interactive course
 
-`course/` is a self-contained HTML course (5 modules) that follows one ticket,
-WL-1026, through the n8n node graph and through this TypeScript agent: the
-four fundamentals, subagents, the loop budget, the contract, routes and memory.
-Quizzes, animations and code ↔ plain-English translations; no build step or
-server needed.
+`course/index.html` is a self-contained course in five modules. It follows
+ticket WL-1026 through the n8n flow and through this agent. Open the file in
+your browser; double-clicking it in your file explorer works on every system.
 
-```bash
-open course/index.html          # read it
-(cd course && bash build.sh)    # rebuild after editing course/modules/*.html
+After you edit `course/modules/*.html`, rebuild and check the page:
+
+```text
+npm run course:build
+npm run course:check
 ```
 
 ## Related
 
-- [Claude Agent SDK (TypeScript)](https://github.com/anthropics/claude-agent-sdk-typescript) · [quickstart](https://code.claude.com/docs/en/agent-sdk/quickstart)
-- Academy Workshop 4 deck: `/workshop/4`
-- Workshop 3 vehicle / fixture parity (same tickets · same L/M/H labels)
+- [Claude Agent SDK (TypeScript)](https://github.com/anthropics/claude-agent-sdk-typescript) and its [quickstart](https://code.claude.com/docs/en/agent-sdk/quickstart)
+- Workshop 3 uses the same tickets and the same `low` / `medium` / `high` labels.
