@@ -11,9 +11,10 @@ You can do the whole project offline. The offline runtime is a scripted fake,
 so it needs no API key and costs nothing. Its output is not model evidence.
 
 This is an optional parity bonus for AetherLink Academy Workshop 4, not a
-required Workshop 4 lesson. Its fixtures are separate from Workshop 4's
-required customer messages and transaction workbook; the required lessons
-live in `training-lab/w4-support-agent-sdk` in the Academy repository.
+required Workshop 4 lesson. Its fixtures are separate
+from Workshop 4's required customer messages and transaction workbook. The
+required lessons are in `training-lab/w4-support-agent-sdk` in the Academy
+repository.
 
 Follow **[SOLO.md](SOLO.md)** for the step-by-step exercise. This README is
 the reference: setup, commands, and where things are.
