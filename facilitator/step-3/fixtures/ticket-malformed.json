@@ -1,0 +1,6 @@
+{
+  "ticket_id": "WL-1026",
+  "customer": "Sanne",
+  "message": 42,
+  "unexpected": "reject this unsupported field"
+}

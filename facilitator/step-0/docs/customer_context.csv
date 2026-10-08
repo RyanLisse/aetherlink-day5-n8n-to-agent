@@ -1,0 +1,7 @@
+customer_id,customer_name,customer_type,transactions_per_hour,previous_incidents,critical
+CUST-001,Alpha Retail,Standard,15,0,False
+CUST-002,Nova Market,Premium,250,1,False
+CUST-003,GlobalPay Commerce,Enterprise,2000,3,True
+CUST-004,Coffee Corner,Standard,8,0,False
+CUST-005,MegaStore Europe,Enterprise,5000,2,True
+CUST-006,City Tickets,Premium,600,4,True

@@ -1,0 +1,10 @@
+{
+  "name": "w4-transaction-mcp",
+  "private": true,
+  "type": "module",
+  "dependencies": {
+    "@modelcontextprotocol/sdk": "1.30.0",
+    "read-excel-file": "9.3.10",
+    "zod": "4.6.5"
+  }
+}

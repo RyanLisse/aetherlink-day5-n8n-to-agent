@@ -1,0 +1,248 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Support Triage Flow</title>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=IBM+Plex+Sans:wght@400;500;600&family=IBM+Plex+Mono:wght@400;500&display=swap">
+<style>
+/* Layout: one wide figure of the n8n canvas on top, then three short reference panels in a wrapping grid. */
+:root {
+  --bg: #f6f5f1;
+  --fg: #1f2329;
+  --muted: #5f6670;
+  --line: #c9c6bd;
+  --panel: #ffffff;
+  --main: #1f2329;        /* main (data) edges */
+  --ai: #6b7280;          /* ai_* (capability) edges */
+  --accent: #0f766e;      /* the AI Agent hub */
+  --accent-soft: #d8efec;
+  --warn: #b45309;        /* gaps the rebuild fixes */
+  --warn-soft: #fdebd0;
+  --display: "IBM Plex Sans", "Helvetica Neue", Arial, sans-serif;
+  --mono: "IBM Plex Mono", "SFMono-Regular", Menlo, Consolas, monospace;
+}
+@media (prefers-color-scheme: dark) {
+  :root:not([data-theme="light"]) {
+    --bg: #15181c; --fg: #e7e6e1; --muted: #a2a7ae; --line: #3a3f46; --panel: #1d2126;
+    --main: #e7e6e1; --ai: #9aa0a8; --accent: #2dd4bf; --accent-soft: #123b37;
+    --warn: #f59e0b; --warn-soft: #3b2a0c; color-scheme: dark;
+  }
+}
+:root[data-theme="dark"] {
+  --bg: #15181c; --fg: #e7e6e1; --muted: #a2a7ae; --line: #3a3f46; --panel: #1d2126;
+  --main: #e7e6e1; --ai: #9aa0a8; --accent: #2dd4bf; --accent-soft: #123b37;
+  --warn: #f59e0b; --warn-soft: #3b2a0c; color-scheme: dark;
+}
+body { background: var(--bg); color: var(--fg); font-family: var(--display); font-size: 15px; line-height: 1.5; }
+.wrap { max-width: 1180px; margin: 0 auto; padding-block: 32px 48px; padding-inline: 16px; }
+header { display: flex; flex-wrap: wrap; align-items: baseline; gap: 8px 20px; margin-bottom: 20px; }
+h1 { font-size: 26px; font-weight: 600; margin: 0; text-wrap: balance; }
+.eyebrow { font-family: var(--mono); font-size: 12px; letter-spacing: .06em; text-transform: uppercase; color: var(--muted); }
+h2 { font-size: 16px; font-weight: 600; margin: 0 0 10px; }
+p { margin: 0 0 10px; max-width: 68ch; }
+figure { margin: 0 0 28px; background: var(--panel); border: 1px solid var(--line); border-radius: 6px; padding: 16px; overflow-x: auto; }
+figure svg { display: block; width: 100%; min-width: 760px; height: auto; max-width: 100%; }
+figcaption { color: var(--muted); font-size: 13px; margin-top: 10px; }
+.legend { display: flex; flex-wrap: wrap; gap: 8px 22px; font-size: 13px; color: var(--muted); margin-top: 10px; }
+.legend span { display: inline-flex; align-items: center; gap: 8px; }
+.legend i { display: inline-block; width: 28px; height: 0; border-top: 2px solid var(--main); }
+.legend i.ai { border-top-style: dashed; border-color: var(--ai); }
+.legend b { display: inline-block; width: 14px; height: 14px; border-radius: 3px; background: var(--accent-soft); border: 1.5px solid var(--accent); }
+.legend b.warn { background: var(--warn-soft); border-color: var(--warn); }
+.panels { display: grid; grid-template-columns: repeat(auto-fit, minmax(300px, 1fr)); gap: 16px; }
+.panel { background: var(--panel); border: 1px solid var(--line); border-radius: 6px; padding: 16px; min-width: 0; }
+table { border-collapse: collapse; width: 100%; font-size: 14px; }
+th, td { text-align: left; padding: 6px 8px; border-bottom: 1px solid var(--line); vertical-align: top; }
+th { font-weight: 500; color: var(--muted); font-size: 12px; letter-spacing: .04em; text-transform: uppercase; }
+code { font-family: var(--mono); font-size: 13px; background: var(--accent-soft); padding: 1px 5px; border-radius: 3px; }
+code.warn { background: var(--warn-soft); }
+pre { font-family: var(--mono); font-size: 12.5px; background: var(--bg); border: 1px solid var(--line); border-radius: 4px; padding: 10px 12px; overflow-x: auto; margin: 8px 0 0; }
+.gap { border-left: 3px solid var(--warn); padding-left: 10px; margin-bottom: 10px; }
+.gap:last-child { margin-bottom: 0; }
+.gap strong { display: block; font-weight: 600; }
+.gap span { color: var(--muted); font-size: 14px; }
+ul { margin: 0; padding-left: 18px; }
+li { margin-bottom: 4px; }
+</style>
+
+<div class="wrap">
+<header>
+  <h1>Support Triage Flow</h1>
+  <span class="eyebrow">n8n/support-triage.json · 16 nodes · 15 edges</span>
+</header>
+
+<figure>
+<svg viewBox="0 0 1200 500" role="img" aria-label="The n8n support-triage workflow: a main line of five nodes from the manual trigger through Ticket Input, AI Agent, a Code node and a Switch into three priority actions, with one OpenAI model, one memory buffer and two agent tools wired into the AI Agent, and each agent tool carrying its own model and memory." font-family="IBM Plex Sans, Helvetica Neue, Arial, sans-serif" font-size="12.5">
+  <defs>
+    <marker id="arrow" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="8" markerHeight="8" orient="auto-start-reverse">
+      <path d="M0,0 L10,5 L0,10 z" fill="currentColor"/>
+    </marker>
+    <marker id="arrow-ai" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="8" markerHeight="8" orient="auto-start-reverse">
+      <path d="M0,0 L10,5 L0,10 z" fill="var(--ai)"/>
+    </marker>
+  </defs>
+
+  <!-- row labels -->
+  <text x="30" y="40" font-family="IBM Plex Mono, Menlo, monospace" font-size="11" fill="var(--muted)" letter-spacing=".06em">MAIN LINE · ticket data flows left to right</text>
+  <text x="230" y="222" font-family="IBM Plex Mono, Menlo, monospace" font-size="11" fill="var(--muted)" letter-spacing=".06em">AI STACK · capabilities plugged into AI Agent</text>
+  <text x="545" y="372" font-family="IBM Plex Mono, Menlo, monospace" font-size="11" fill="var(--muted)" letter-spacing=".06em">EACH TOOL IS ITS OWN AGENT · own model, own memory</text>
+
+  <!-- ===== main edges (solid, currentColor) ===== -->
+  <g stroke="currentColor" stroke-width="1.8" fill="none" marker-end="url(#arrow)">
+    <line x1="160" y1="110" x2="198" y2="110"/>
+    <line x1="330" y1="110" x2="398" y2="110"/>
+    <line x1="550" y1="110" x2="598" y2="110"/>
+    <line x1="750" y1="110" x2="798" y2="110"/>
+    <path d="M920,110 H950 V54 H988"/>
+    <line x1="920" y1="110" x2="988" y2="110"/>
+    <path d="M920,110 H950 V166 H988"/>
+  </g>
+  <g fill="var(--muted)" font-size="11">
+    <text x="340" y="100">ticket JSON</text>
+    <text x="556" y="100">text out</text>
+    <text x="756" y="100">parsed</text>
+    <text x="953" y="48">out0</text>
+    <text x="953" y="104">out1</text>
+    <text x="953" y="160">out2</text>
+  </g>
+
+  <!-- ===== ai edges (dashed) into AI Agent bottom ===== -->
+  <g stroke="var(--ai)" stroke-width="1.6" stroke-dasharray="5 4" fill="none" marker-end="url(#arrow-ai)">
+    <path d="M305,246 V200 H430 V136"/>
+    <path d="M475,246 V136"/>
+    <path d="M675,246 V200 H505 V136"/>
+    <path d="M910,246 V190 H535 V136"/>
+    <!-- subtool stacks -->
+    <path d="M607,396 V322"/>
+    <path d="M745,396 V322"/>
+    <path d="M890,396 V322"/>
+    <path d="M1027,396 V340 H960 V322"/>
+  </g>
+  <g fill="var(--ai)" font-size="11">
+    <text x="312" y="195">ai_languageModel</text>
+    <text x="481" y="195">ai_memory</text>
+    <text x="580" y="195">ai_tool</text>
+    <text x="750" y="185">ai_tool</text>
+    <text x="612" y="362">model</text>
+    <text x="750" y="362">memory</text>
+    <text x="895" y="362">model</text>
+    <text x="965" y="336">memory</text>
+  </g>
+
+  <!-- ===== main row nodes (y 86..134) ===== -->
+  <g stroke="currentColor" stroke-width="1.4" fill="var(--panel)">
+    <rect x="30" y="86" width="130" height="48" rx="6"/>
+    <rect x="200" y="86" width="130" height="48" rx="6"/>
+    <rect x="600" y="86" width="150" height="48" rx="6"/>
+    <rect x="800" y="86" width="120" height="48" rx="6"/>
+    <rect x="990" y="30" width="180" height="48" rx="6"/>
+    <rect x="990" y="86" width="180" height="48" rx="6"/>
+    <rect x="990" y="142" width="180" height="48" rx="6"/>
+  </g>
+  <!-- AI Agent hub -->
+  <rect x="400" y="86" width="150" height="48" rx="6" fill="var(--accent-soft)" stroke="var(--accent)" stroke-width="2"/>
+
+  <g fill="currentColor" text-anchor="middle">
+    <text x="95" y="106" font-weight="600">Execute workflow</text>
+    <text x="95" y="124" font-size="11" fill="var(--muted)">manualTrigger</text>
+    <text x="265" y="106" font-weight="600">Ticket Input</text>
+    <text x="265" y="124" font-size="11" fill="var(--muted)">set · WL-1026</text>
+    <text x="475" y="106" font-weight="600">AI Agent</text>
+    <text x="475" y="124" font-size="11" fill="var(--muted)">langchain.agent</text>
+    <text x="675" y="106" font-weight="600">Code in JavaScript</text>
+    <text x="675" y="124" font-size="11" fill="var(--muted)">JSON.parse($json.output)</text>
+    <text x="860" y="106" font-weight="600">Switch</text>
+    <text x="860" y="124" font-size="11" fill="var(--muted)">$json.priority equals</text>
+    <text x="1080" y="50" font-weight="600">Low Priority Action</text>
+    <text x="1080" y="68" font-size="11" fill="var(--muted)">set · AUTO_REPLY</text>
+    <text x="1080" y="106" font-weight="600">Medium Priority Action</text>
+    <text x="1080" y="124" font-size="11" fill="var(--muted)">set · INVESTIGATE</text>
+    <text x="1080" y="162" font-weight="600">High Priority Action</text>
+    <text x="1080" y="180" font-size="11" fill="var(--muted)">set · ESCALATE · SLA 30 min</text>
+  </g>
+
+  <!-- ===== AI stack row (y 246..294) ===== -->
+  <g stroke="var(--ai)" stroke-width="1.4" fill="var(--panel)">
+    <rect x="230" y="246" width="150" height="48" rx="6"/>
+    <rect x="400" y="246" width="150" height="48" rx="6"/>
+  </g>
+  <rect x="590" y="246" width="170" height="48" rx="6" fill="var(--panel)" stroke="var(--accent)" stroke-width="1.6"/>
+  <rect x="840" y="246" width="140" height="48" rx="6" fill="var(--panel)" stroke="var(--accent)" stroke-width="1.6"/>
+  <g fill="currentColor" text-anchor="middle">
+    <text x="305" y="266" font-weight="600">OpenAI Chat Model</text>
+    <text x="305" y="284" font-size="11" fill="var(--muted)">gpt-5-mini</text>
+    <text x="475" y="266" font-weight="600">Simple Memory</text>
+    <text x="475" y="284" font-size="11" fill="var(--muted)">buffer window · key 1</text>
+    <text x="675" y="266" font-weight="600">Customer Reply Agent</text>
+    <text x="675" y="284" font-size="11" fill="var(--muted)">agentTool · reply draft</text>
+    <text x="910" y="266" font-weight="600">Risk Agent</text>
+    <text x="910" y="284" font-size="11" fill="var(--muted)">agentTool · risk note</text>
+  </g>
+
+  <!-- ===== sub-tool row (y 396..444) ===== -->
+  <g stroke="var(--ai)" stroke-width="1.4" fill="var(--panel)">
+    <rect x="545" y="396" width="125" height="48" rx="6"/>
+    <rect x="830" y="396" width="120" height="48" rx="6"/>
+  </g>
+  <rect x="685" y="396" width="125" height="48" rx="6" fill="var(--panel)" stroke="var(--ai)" stroke-width="1.4"/>
+  <rect x="965" y="396" width="125" height="48" rx="6" fill="var(--warn-soft)" stroke="var(--warn)" stroke-width="1.8"/>
+  <g fill="currentColor" text-anchor="middle">
+    <text x="607" y="416" font-weight="600">Chat Model 1</text>
+    <text x="607" y="434" font-size="11" fill="var(--muted)">gpt-5-mini</text>
+    <text x="747" y="416" font-weight="600">Memory 1</text>
+    <text x="747" y="434" font-size="11" fill="var(--muted)">key 2</text>
+    <text x="890" y="416" font-weight="600">Chat Model 2</text>
+    <text x="890" y="434" font-size="11" fill="var(--muted)">gpt-5-mini</text>
+    <text x="1027" y="416" font-weight="600">Memory 2</text>
+    <text x="1027" y="434" font-size="11" fill="var(--warn)">key 1 · shared with coordinator</text>
+  </g>
+  <text x="965" y="470" font-size="11" fill="var(--warn)">Risk Agent reads the coordinator's chat history: same static session key.</text>
+</svg>
+<figcaption>Solid edges carry the ticket forward; dashed edges plug a model, a memory or a tool into an agent. The AI Agent is the only node that owns the dashed stack, which is why the SDK rebuild collapses it into one <code>query()</code> call with <code>options</code>.</figcaption>
+<div class="legend">
+  <span><i></i> main · data</span>
+  <span><i class="ai"></i> ai_* · capability</span>
+  <span><b></b> coordinator and its two tools</span>
+  <span><b class="warn"></b> gap the rebuild fixes</span>
+</div>
+</figure>
+
+<div class="panels">
+  <section class="panel">
+    <h2>Where each node lands in the SDK</h2>
+    <table>
+      <thead><tr><th>n8n node</th><th>Claude Agent SDK</th></tr></thead>
+      <tbody>
+        <tr><td>Ticket Input (Set)</td><td><code>fixtures/ticket.json</code> → <code>parseTicket</code></td></tr>
+        <tr><td>AI Agent · System Message</td><td><code>options.systemPrompt</code> = <code>COORDINATOR_SYSTEM</code></td></tr>
+        <tr><td>AI Agent · Prompt</td><td><code>prompt</code> = <code>buildTriagePrompt(ticket)</code></td></tr>
+        <tr><td>Customer Reply Agent, Risk Agent</td><td><code>tools: ["Agent"]</code> + <code>options.agents</code></td></tr>
+        <tr><td>Simple Memory (keys 1, 2, 1)</td><td><code>memory/&lt;ticket_id&gt;.md</code> rendered into the prompt</td></tr>
+        <tr><td>Code in JavaScript</td><td><code>outputFormat: json_schema</code> + <code>validateDecision</code></td></tr>
+        <tr><td>Switch + three Set nodes</td><td><code>routeDecision</code> in <code>src/router.ts</code></td></tr>
+      </tbody>
+    </table>
+  </section>
+
+  <section class="panel">
+    <h2>The Switch, verbatim</h2>
+    <p>Three rules, one field, string equality. Any other value falls through to nothing.</p>
+    <pre>out0  $json.priority equals "low"     → AUTO_REPLY
+out1  $json.priority equals "medium"  → INVESTIGATE
+out2  $json.priority equals "high"    → ESCALATE  (SLA 30 min)</pre>
+    <p style="margin-top:10px">The coordinator's system message is one line: <em>"Always talk with the Customer Reply Agent and with the Risk Agent."</em> The tool nodes get their input through <code>$fromAI('Prompt__User_Message_')</code>, so the model decides what each specialist sees.</p>
+  </section>
+
+  <section class="panel">
+    <h2>Gaps the rebuild fixes</h2>
+    <p>These are asserted by <code>test/n8n-source.test.ts</code>, so they are facts about the file, not opinions.</p>
+    <div class="gap"><strong>Static memory keys 1, 2, 1</strong><span>Every run of every ticket shares the same buffer, and Risk Agent shares the coordinator's. The SDK keeps one markdown file per ticket.</span></div>
+    <div class="gap"><strong>No <code class="warn">ticket_id</code> in the final JSON</strong><span>The Code node cannot tell which ticket a decision belongs to. The SDK schema requires it and <code>validateDecision</code> rejects a mismatch.</span></div>
+    <div class="gap"><strong>UPPERCASE action labels</strong><span>The Set nodes emit <code class="warn">AUTO_REPLY</code>; the shared contract is lowercase <code>auto_reply</code>. The validator rejects the n8n spelling.</span></div>
+  </section>
+</div>
+</div>
+
+</body>
+</html>

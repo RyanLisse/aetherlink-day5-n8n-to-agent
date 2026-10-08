@@ -1,0 +1,163 @@
+diff --git a/answer-key.json b/answer-key.json
+new file mode 100644
+index 0000000..670d0a9
+--- /dev/null
++++ b/answer-key.json
+@@ -0,0 +1,14 @@
++{
++  "algorithm": "sha256",
++  "hashes": {
++    "MSG-01": "2faf417d9b2e3be77b57d549069409a57a4905ffd04d36baf3d026e5c2e18194",
++    "MSG-02": "03209c86de6315af14b29deb4d00e28bba25c03d1d1d60d10ca4babf5469d60f",
++    "MSG-03": "8467739e86922530639818111ff2f0f58dee5506f0f534d9381892484abd99f0",
++    "MSG-04": "051775ade80ebb6975b9d338849092a2a5e72aa3410f77f8d25aaf301d5d0789",
++    "MSG-05": "f3f93bdd283767bec0f40e71c59c0b54647d1caac0c19f94ff2c1ede04c6d0d5",
++    "MSG-06": "a20ec24c251fbc0b01bc16fcaf65e54bb60200ac076a2a1a629b03ff6aecaac7",
++    "MSG-07": "01754ef2a2d95b8db264879fc0b03ce17474356d2d4fd76a2d3c8f4840353e02",
++    "MSG-08": "0fb35c76a017037d40bdad39d0bd263cf8174f9a9ef38794a8b1eee69fdf57f3",
++    "MSG-09": "13f688b0dc673e22d8ebba4def35f19f9e27dbf2293e077eea2e313a900cf7f3"
++  }
++}
+diff --git a/check.mjs b/check.mjs
+new file mode 100644
+index 0000000..3a69239
+--- /dev/null
++++ b/check.mjs
+@@ -0,0 +1,63 @@
++import { createHash } from 'node:crypto';
++import { copyFileSync, existsSync, readFileSync } from 'node:fs';
++import path from 'node:path';
++import { fileURLToPath } from 'node:url';
++
++const packageDirectory = path.dirname(fileURLToPath(import.meta.url));
++const labelsPath = path.resolve(process.argv[2] ?? path.join(packageDirectory, 'labels.json'));
++const templatePath = path.join(packageDirectory, 'labels.template.json');
++const answerKey = JSON.parse(readFileSync(path.join(packageDirectory, 'answer-key.json'), 'utf8'));
++const LABELS = ['low', 'medium', 'high'];
++const UNGRADED = ['MSG-10'];
++const LESSONS = [
++  { name: 'Lesson 1', range: 'MSG-01 to MSG-06', ids: ['MSG-01', 'MSG-02', 'MSG-03', 'MSG-04', 'MSG-05', 'MSG-06'] },
++  { name: 'Lesson 3', range: 'MSG-01 to MSG-09', ids: Object.keys(answerKey.hashes) },
++];
++
++const hash = (id, label) => createHash(answerKey.algorithm).update(`${id}:${label}`).digest('hex');
++const stop = (message) => {
++  console.error(message);
++  process.exit(2);
++};
++
++if (!existsSync(labelsPath)) {
++  if (process.argv[2]) stop(`No labels file at ${labelsPath}.`);
++  copyFileSync(templatePath, labelsPath);
++  console.log('Created labels.json. Write low, medium or high for each message, then run npm run check again.');
++  process.exit(1);
++}
++
++let labels;
++try {
++  labels = JSON.parse(readFileSync(labelsPath, 'utf8'));
++} catch (error) {
++  stop(`${path.basename(labelsPath)} is not valid JSON: ${error.message}`);
++}
++if (!labels || typeof labels !== 'object' || Array.isArray(labels)) {
++  stop('labels.json must be a JSON object like {"MSG-01": "low"}.');
++}
++
++const results = new Map();
++for (const [id, value] of Object.entries(labels)) {
++  if (UNGRADED.includes(id)) {
++    console.log(`${id} is not graded (information is missing); ignored.`);
++    continue;
++  }
++  if (!(id in answerKey.hashes)) stop(`Unknown message ID: ${id}. Use MSG-01 to MSG-09.`);
++  const label = typeof value === 'string' ? value.trim().toLowerCase() : value;
++  if (label === '' || label === null) continue;
++  if (!LABELS.includes(label)) stop(`Invalid label for ${id}: ${JSON.stringify(value)}. Use low, medium or high.`);
++  const correct = hash(id, label) === answerKey.hashes[id];
++  results.set(id, correct);
++  console.log(`${id} ${correct ? 'correct' : 'revise'}`);
++}
++
++for (const lesson of LESSONS) {
++  const matched = lesson.ids.filter((id) => results.get(id) === true).length;
++  const verdict = matched === lesson.ids.length ? 'PASS' : 'REVISE';
++  console.log(`${lesson.name} (${lesson.range}): ${matched}/${lesson.ids.length} ${verdict}`);
++}
++
++const lessonOnePass = LESSONS[0].ids.every((id) => results.get(id) === true);
++const anyWrong = [...results.values()].includes(false);
++process.exit(lessonOnePass && !anyWrong ? 0 : 1);
+diff --git a/labels.template.json b/labels.template.json
+new file mode 100644
+index 0000000..ac3e439
+--- /dev/null
++++ b/labels.template.json
+@@ -0,0 +1,11 @@
++{
++  "MSG-01": "",
++  "MSG-02": "",
++  "MSG-03": "",
++  "MSG-04": "",
++  "MSG-05": "",
++  "MSG-06": "",
++  "MSG-07": "",
++  "MSG-08": "",
++  "MSG-09": ""
++}
+diff --git a/package-lock.json b/package-lock.json
+index a6eb64e..0d96bc0 100644
+--- a/package-lock.json
++++ b/package-lock.json
+@@ -7,6 +7,7 @@
+     "": {
+       "name": "aetherlink-day5-n8n-to-agent",
+       "version": "1.0.0",
++      "hasInstallScript": true,
+       "license": "MIT",
+       "dependencies": {
+         "@anthropic-ai/claude-agent-sdk": "0.3.281"
+diff --git a/package.json b/package.json
+index 8d79bdb..d17d8a8 100644
+--- a/package.json
++++ b/package.json
+@@ -18,7 +18,8 @@
+     "clerk": "node 03-mcp/clerk.mjs",
+     "smoke:mcp": "node 03-mcp/transaction-mcp/smoke.mjs",
+     "mcp:smoke": "node 03-mcp/transaction-mcp/smoke.mjs",
+-    "reset:mcp": "node 03-mcp/transaction-mcp/reset.mjs"
++    "reset:mcp": "node 03-mcp/transaction-mcp/reset.mjs",
++    "check": "node check.mjs"
+   },
+   "dependencies": {
+     "@anthropic-ai/claude-agent-sdk": "0.3.281"
+diff --git a/test/step4.test.mjs b/test/step4.test.mjs
+new file mode 100644
+index 0000000..ab9de2a
+--- /dev/null
++++ b/test/step4.test.mjs
+@@ -0,0 +1,25 @@
++import assert from 'node:assert/strict';
++import { spawnSync } from 'node:child_process';
++import { copyFileSync, mkdtempSync, rmSync, writeFileSync } from 'node:fs';
++import { tmpdir } from 'node:os';
++import path from 'node:path';
++import { test } from 'node:test';
++
++const check = (file) => spawnSync(process.execPath, ['check.mjs', file], { encoding: 'utf8' });
++
++test('Step 4: npm run check prints the acceptance lines and exits 1 until labels are filled in', () => {
++  const dir = mkdtempSync(path.join(tmpdir(), 'w4-check-'));
++  try {
++    const labels = path.join(dir, 'labels.json');
++    copyFileSync('labels.template.json', labels);
++    const result = check(labels);
++    assert.equal(result.status, 1);
++    assert.match(result.stdout, /Lesson 1 \(MSG-01 to MSG-06\): 0\/6 REVISE/);
++    assert.match(result.stdout, /Lesson 3 \(MSG-01 to MSG-09\): 0\/9 REVISE/);
++
++    writeFileSync(labels, JSON.stringify({ 'MSG-01': 'urgent' }));
++    assert.equal(check(labels).status, 2);
++  } finally {
++    rmSync(dir, { recursive: true, force: true });
++  }
++});
