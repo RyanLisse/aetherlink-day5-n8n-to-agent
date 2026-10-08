@@ -11,7 +11,8 @@
   "scripts": {
     "lesson1": "node 01-single-agent/agent.mjs",
     "test": "node --test \"test/*.test.mjs\"",
-    "verify": "npm test && npm run lesson1 -- MSG-01 --dry-run"
+    "verify": "npm test && npm run lesson1 -- MSG-01 --dry-run && npm run lesson2 -- MSG-05 --dry-run",
+    "lesson2": "node 02-subagents/agent.mjs"
   },
   "dependencies": {
     "@anthropic-ai/claude-agent-sdk": "0.3.281"
