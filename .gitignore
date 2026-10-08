@@ -2,11 +2,13 @@ node_modules/
 .env
 .env.*
 !.env.example
-participant-output/*
-!participant-output/.gitkeep
-# per-ticket memory is local run history; team lessons are committed
-memory/*.md
-!memory/MEMORY.md
-!memory/README.md
 .claude/settings.local.json
 coverage/
+# Workshop 4 lessons: local labels and drafts
+labels.json
+02-subagents/claude-project/output/*
+!02-subagents/claude-project/output/.gitkeep
+03-mcp/claude-project/output/*
+!03-mcp/claude-project/output/.gitkeep
+participant-output/
+03-mcp/transaction-mcp/node_modules/

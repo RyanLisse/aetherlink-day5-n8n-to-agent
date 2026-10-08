@@ -2,7 +2,7 @@ name: CI
 
 on:
   push:
-    branches: [main]
+    branches: [main, 'step-*', solution, facilitator]
   pull_request:
   workflow_dispatch:
 
@@ -28,7 +28,3 @@ jobs:
           cache: npm
       - run: npm ci
       - run: npm run verify
-      - run: npm run triage -- fixtures/ticket.json --dry-run
-      - run: npm run triage -- fixtures/ticket-followup.json --dry-run --out participant-output/wl-1027.json
-      - run: npm run check -- --ticket fixtures/ticket-followup.json --decision participant-output/wl-1027.json
-      - run: npm run course:check

@@ -2,27 +2,18 @@
   "name": "aetherlink-day5-n8n-to-agent",
   "version": "1.0.0",
   "private": true,
-  "description": "Workshop 4 \u00b7 rebuild n8n support-triage on the Claude Agent SDK (systemPrompt, prompt, subagents, markdown memory, maxTurns) \u2014 offline dry-run.",
+  "description": "AetherLink Academy Workshop 4 · Support agents with the Claude Agent SDK — Steps 0–4: one agent + CLAUDE.md, orchestrator + subagents, MCP get_transaction with a human approval gate, label check. Offline dry runs need no API key.",
   "license": "MIT",
   "type": "module",
   "engines": {
     "node": ">=22"
   },
   "scripts": {
-    "typecheck": "tsc --noEmit",
-    "test": "tsx --test \"test/*.test.ts\"",
-    "check": "tsx src/check.ts",
-    "triage": "tsx src/cli.ts",
-    "verify": "npm run typecheck && npm test && npm run check",
-    "course:build": "node course/build.mjs",
-    "course:check": "node course/build.mjs --check"
+    "lesson1": "node 01-single-agent/agent.mjs",
+    "test": "node --test \"test/*.test.mjs\"",
+    "verify": "npm test && npm run lesson1 -- MSG-01 --dry-run"
   },
   "dependencies": {
-    "@anthropic-ai/claude-agent-sdk": "^0.3.274"
-  },
-  "devDependencies": {
-    "@types/node": "^22.20.3",
-    "tsx": "^4.23.13",
-    "typescript": "^5.9.3"
+    "@anthropic-ai/claude-agent-sdk": "0.3.281"
   }
 }
