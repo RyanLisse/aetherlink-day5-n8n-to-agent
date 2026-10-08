@@ -1,0 +1,9 @@
+{
+  "mcpServers": {
+    "transactions": {
+      "type": "stdio",
+      "command": "node",
+      "args": ["03-mcp/transaction-mcp/server.js"]
+    }
+  }
+}
