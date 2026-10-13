@@ -735,6 +735,32 @@ Catch up: `git switch step-4` (or `solution`).
 
 ---
 
+## Step 5 · Build your own agent
+
+**Goal:** build a small code-fixing agent and identify where its prompt, tools and result handling live.
+
+**n8n then / SDK now:** yesterday you connected nodes; here you compose a prompt, allowed tools and a query loop.
+
+**How the loop works here:** the SDK yields assistant messages, tool uses and a final result. The allowed-tools list limits what the model can do; the permission mode controls edits.
+
+**Demo (facilitator, ~5 min):** show the starter's offline command, then run the Claude Code equivalent:
+
+```sh
+cd 05-build-your-own
+node agent.mjs --dry-run
+claude -p "Find and fix the bug in utils.js. Explain the change." --allowedTools Read,Edit,Glob --permission-mode acceptEdits
+```
+
+**Your turn (~15–20 min):** use `05-build-your-own/README.md` to initialize the folder and install the SDK. With an API key, run `node agent.mjs`; without one, run `node agent.mjs --dry-run` or use your Claude Code login with the command above.
+
+**Check:** explain which message is a tool use and which is the final result.
+
+**Catch up:** `git switch step-4`.
+
+**Discuss:** what prompt or tool would make this agent useful for your own work?
+
+---
+
 ## Stretch · Assignment: chat in, chat out
 
 Yesterday's assignment: the ticket goes in via the Chat Input, through the whole flow, and a chat
