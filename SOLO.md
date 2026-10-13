@@ -40,8 +40,13 @@ npm run lesson1 -- MSG-01 --dry-run
 the options (still `{}`) and `dry run — no model call, not model evidence`.
 
 **Look around:** `docs/customer-messages.md` (MSG-01 to MSG-10), `docs/transactions.xlsx`,
-`docs/n8n-flow-diagram.html` (open it in your browser), `lib/run.mjs` (the `query()` loop),
-and `01-single-agent/options.mjs` with its `// STEP 1` TODOs.
+`docs/customer_context.csv` (the file Maarten's Data Table was imported from),
+`docs/n8n-flow-diagram.html` (open it in your browser, next to your own n8n flow from
+yesterday), `lib/run.mjs` (the `query()` loop), and `01-single-agent/options.mjs` with its
+`// STEP 1` TODOs.
+
+n8n then: Execute workflow or the Chat Message trigger started one run. SDK now:
+`npm run lessonN -- MSG-0N` starts one run, and the message becomes the `prompt` of `query()`.
 
 Set your key now for the real runs in Step 1:
 `export ANTHROPIC_API_KEY=sk-ant-...` (PowerShell: `$env:ANTHROPIC_API_KEY = "sk-ant-..."`,
@@ -52,8 +57,8 @@ Command Prompt: `set ANTHROPIC_API_KEY=sk-ant-...`).
 ## Step 1 · One agent + system prompt + `CLAUDE.md`
 
 **Goal:** one agent classifies a customer message as LOW, MEDIUM or HIGH, guided by project
-instructions. n8n then: the AI Agent node with a System Message. SDK now: `query()` with options,
-and the system message lives in `CLAUDE.md`.
+instructions. n8n then: the AI Agent node with a System Message, before any sub agent (Maarten's
+slide 4). SDK now: `query()` with options, and the system message lives in `CLAUDE.md`.
 
 **Build 1 — the options.** Replace `buildOptions()` in `01-single-agent/options.mjs`:
 
@@ -77,6 +82,16 @@ export function buildOptions() {
 
 The system prompt is the built-in `claude_code` preset; `settingSources: ['project']` adds
 `claude-project/CLAUDE.md` on top of it. `maxTurns` is n8n's "Max Iterations".
+
+The `## Required output` section at the end of `CLAUDE.md` is the code version of yesterday's
+Structured Output Parser: it fixes the fields (`Priority:` and `Reason:`) that `npm run check`
+reads in Step 4. For real JSON the SDK has `outputFormat: { type: 'json_schema', schema }`;
+not needed here.
+
+**Memory.** Yesterday Simple Memory remembered your favourite colour inside one chat. Here the
+session is the memory: inside one `query()` the agent remembers every turn, and every
+`npm run lesson1` is a fresh session on purpose (one ticket = one case). `continue: true` or
+`resume: sessionId` would carry a conversation on; not part of the exercise.
 
 **Build 2 — the prompt.** Replace `01-single-agent/claude-project/CLAUDE.md` with:
 
@@ -138,7 +153,7 @@ wording never lowers it.` make impact the rule.
 `npm run verify` still green. Catch up: `git checkout step-1`.
 
 **Discuss:** what does the main agent know? Instructions come from `CLAUDE.md`; the customer
-message is data, not an instruction.
+message is data, not an instruction. Share your screen: one run, and where you got stuck.
 
 ---
 
@@ -146,8 +161,9 @@ message is data, not an instruction.
 
 **Goal:** the main agent stops doing everything itself. It delegates the analysis to
 `ticket-analyst` and the reply to `email-responder`, and saves a draft for a person to review.
-n8n then: Risk Agent and Customer Reply Agent as tools of the AI Agent. SDK now: `options.agents`
-plus the `Agent` tool.
+n8n then: Risk Agent and Customer Reply Agent as tools of the AI Agent (Maarten's slides 7–9).
+SDK now: `options.agents` plus the `Agent` tool. The Risk Agent becomes `ticket-analyst`, the
+Customer Reply Agent becomes `email-responder`.
 
 **Build 1 — the subagent prompts.** Create `.claude/agents/ticket-analyst.md`:
 
@@ -183,8 +199,9 @@ Do not promise refunds, reversals, compensation or timelines. Do not invent fact
 Start with `Subject:` and end with `Draft — needs human approval before sending.`
 ```
 
-This is the Claude Code subagent format: the `description` tells the orchestrator when to
-delegate, the body is the subagent's prompt.
+This is the Claude Code subagent format, and it is exactly the split from yesterday's Risk Agent
+settings: the frontmatter `description` is n8n's **Description** (it tells the orchestrator when
+to delegate), the body is n8n's **System Message** (the subagent's own prompt).
 
 **Build 2 — load them.** Create `lib/agents.mjs`:
 
@@ -307,7 +324,11 @@ npm run lesson2 -- MSG-10
 **Check:** the trace shows `Agent → ticket-analyst` before `Agent → email-responder`.
 Open `02-subagents/claude-project/output/MSG-05.md`. For `MSG-10` the analyst lists the missing
 information. No `Agent →` lines? The orchestrator did the work itself: run again and discuss why.
-Catch up: `git checkout step-2`.
+
+**The description test.** Replace the `description:` of `.claude/agents/ticket-analyst.md` with
+something vague (`Helps with things.`) and rerun `MSG-05`. Does the orchestrator still delegate?
+Restore it with `git checkout step-2 -- .claude/agents/ticket-analyst.md`. Yesterday the same
+thing happened in n8n when the Risk Agent's Description was empty. Catch up: `git checkout step-2`.
 
 ---
 
@@ -315,8 +336,9 @@ Catch up: `git checkout step-2`.
 
 **Goal:** the analyst looks up transaction facts through a tool, never by reading the file.
 A small MCP server reads `docs/transactions.xlsx` and offers `get_transaction` (and
-`list_transactions`). n8n then: an HTTP Request or Google Sheets node. SDK now: an MCP server over
-stdio in `options.mcpServers`.
+`list_transactions`). n8n then: the Customer Context Agent with `Get row(s) in Data table`, over
+the Data Table you imported from `customer_context.csv` (Maarten's slides 10–11). SDK now: an MCP
+server over stdio in `options.mcpServers`, as a tool of the `ticket-analyst`.
 
 Data path: `docs/transactions.xlsx → server.js → MCP tool get_transaction → query() → ticket-analyst`.
 
@@ -493,13 +515,34 @@ Catch up: `git checkout step-4` (or `solution`).
 
 ---
 
-## Stretch
+## Stretch · Assignment: chat in, chat out
+
+Yesterday's assignment: the ticket goes in via the Chat Input, through the whole flow, and a chat
+message comes back. Same assignment, in code:
+
+```sh
+cd aetherlink-day5-n8n-to-agent
+claude
+```
+
+Claude Code reads `.mcp.json` (the transactions server) and `.claude/agents/` (`ticket-analyst`,
+`email-responder`, `transaction-clerk`), so the whole Step 3 flow is available from a chat.
+
+1. Paste one customer message with a `TX-####` ID from `docs/customer-messages.md` and ask for the
+   priority, the analysis and a reply draft.
+2. Watch the trace: which subagent ran, which MCP tool was called?
+3. Ask a follow-up in the same chat. Now the session is the memory, like Simple Memory yesterday.
+4. Explore, like "look at other nodes" yesterday: add a third subagent (`customer-context` over
+   `docs/customer_context.csv`, like the Customer Context Agent), a `SKILL.md`, or a `PreToolUse`
+   hook. What would you change in `CLAUDE.md`?
+
+More stretch:
 
 - Run `MSG-07` to `MSG-09` with `lesson2` (no tool) and compare with `lesson3`.
-- Open Claude Code in this folder: `.mcp.json` and `.claude/agents/` give it the same server and subagents.
 - Try the clerk with a customer message and see it refuse.
 
-## Wrap-up · bridge to Workshop 5
+## Wrap-up · recap round, bridge to Workshop 5
 
-One agent, two subagents, one MCP tool, and a person who reviews every draft. Which part was easier
-in n8n, and which in code? Where must a person still decide?
+Recap round: everyone shows one result in one minute (a trace, a draft, the check output, or the
+chat). One agent, two subagents, one MCP tool, and a person who reviews every draft. Which part was
+easier in n8n, and which in code? Where must a person still decide?

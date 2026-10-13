@@ -1,7 +1,8 @@
 # Workshop 4 · Support agents with the Claude Agent SDK
 
 AetherLink Academy Workshop 4. In Workshop 3 you built a support-triage flow in
-n8n. Today you rebuild it step by step with the
+n8n with Maarten: Switch, Chat trigger, Simple Memory, AI Agent, Structured Output
+Parser, three sub agents and a Data Table. Today you rebuild it step by step with the
 [Claude Agent SDK](https://code.claude.com/docs/en/agent-sdk/overview) and `query()`:
 
 | Step | You build | Branch with the finished step |
@@ -104,18 +105,31 @@ Files for Step 2 and later appear when you build them (or check out the step bra
 
 ## n8n → Agent SDK
 
+Workshop 3 was Maarten's node-by-node n8n build: Ticket Input → Switch, a Chat
+Message trigger, Simple Memory (the favorite-colour test), an AI Agent with a
+Structured Output Parser, three sub agents (Customer Reply, Risk, Customer Context)
+and a Data Table imported from `docs/customer_context.csv`. Every one of those
+nodes has a place in code:
+
 | n8n (Workshop 3) | Agent SDK (today) | Step |
 | --- | --- | --- |
-| AI Agent node | `query({ prompt, options })` in `lib/run.mjs` | 1 |
+| Execute workflow / Chat Message trigger | `npm run lessonN -- MSG-0N`: the message becomes the `prompt` of `query()` | 0 |
+| AI Agent node + OpenAI Chat Model | `query({ prompt, options })` in `lib/run.mjs` | 1 |
 | System Message | `CLAUDE.md`, loaded by `settingSources: ['project']` | 1 |
 | Max Iterations | `maxTurns` | 1 |
+| Simple Memory | The session: one `query()` remembers every turn. Each lesson run is a fresh session on purpose; `continue: true` or `resume: sessionId` carries a conversation on (concept, not in the exercise) | — |
+| Structured Output Parser (priority, sentiment, …) | `## Required output` in `CLAUDE.md`, checked by `npm run check`; `outputFormat: { type: 'json_schema', schema }` for real JSON (concept) | 1, 4 |
 | Risk Agent / Customer Reply Agent | `ticket-analyst` / `email-responder` in `options.agents` + the `Agent` tool | 2 |
-| HTTP Request / Google Sheets node | MCP server (stdio) with `get_transaction`, in `options.mcpServers` | 3 |
-| Human gate | Draft in `output/`, `permissionMode`, `allowedTools`, `canUseTool` (y/N) | 2–3 |
-| Switch on Low/Medium/High | The label in the model's answer, checked with `npm run check` | 4 |
+| Sub agent settings: Description vs System Message | `.claude/agents/<name>.md`: frontmatter `description` (when to delegate) vs body (the subagent's prompt) | 2 |
+| Customer Context Agent + Data Table (`Get row(s) in Data table`) | MCP server (stdio) with `get_transaction` over `docs/transactions.xlsx`, in `options.mcpServers` | 3 |
+| Human gate (not in the W3 build: the reply went straight back to the chat) | Draft in `output/`, `permissionMode`, `allowedTools`, `canUseTool` (y/N) | 2–3 |
+| Switch on low / medium / high | The label in the model's answer, checked with `npm run check` | 4 |
+| Assignment: chat in → whole flow → chat out | Claude Code in this folder: `.mcp.json` + `.claude/agents/` run the whole Step 3 flow from a chat | Stretch |
 
 Hooks (`options.hooks`) and skills (`SKILL.md`) are concepts in the slides; they are
-not part of the exercise.
+not part of the exercise. `n8n/support-triage.json` is the W3 export before the Chat
+trigger, Output Parser and Customer Context Agent were added; `docs/n8n-flow-diagram.html`
+draws it.
 
 ## Safety
 
