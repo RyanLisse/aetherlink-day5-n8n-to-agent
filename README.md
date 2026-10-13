@@ -97,7 +97,8 @@ lib/chat.mjs                     interactive chat with optional session memory
 lib/switch.mjs                   the low / medium / high action and team routes
 01-single-agent/                 Step 1: options.mjs, priority-schema.mjs + claude-project/CLAUDE.md
 02-subagents/                    Step 2: options.mjs, ticket-schema.mjs, agents.mjs, output/
-.claude/agents/                  Step 2–3: risk-agent, customer-reply-agent, customer-context-agent
+.claude/agents/                  Step 2: risk-agent, customer-reply-agent
+                                 Step 3: customer-context-agent
 03-mcp/                          Step 3: read-only transaction/customer MCP servers
 .mcp.json                        Step 3: the same MCP server for Claude Code
 check.mjs, labels.template.json  Step 4: the label check
