@@ -1,18 +1,211 @@
 {
+  "id": "d851075c-6f45-4ec0-9d0e-f6ac499b3ce2",
+  "name": "Support Triage",
   "nodes": [
     {
-      "parameters": {},
-      "type": "n8n-nodes-base.manualTrigger",
-      "typeVersion": 1,
-      "position": [
-        -208,
-        -48
-      ],
-      "id": "bbc9eadc-ef8f-4255-b137-62e4d53f26e2",
-      "name": "When clicking ‘Execute workflow’",
-      "alwaysOutputData": false
+      "id": "83c3c037-b220-4d50-8d5b-5d66d4621bc4",
+      "name": "When chat message received",
+      "type": "@n8n/n8n-nodes-langchain.chatTrigger",
+      "typeVersion": 1.5,
+      "position": [180, 120],
+      "parameters": {
+        "public": true,
+        "mode": "hostedChat",
+        "options": {
+          "responseMode": "lastNode"
+        }
+      }
     },
     {
+      "id": "a3f97dd2-d74e-4b93-9b44-e6dc6a0c8393",
+      "name": "When clicking ‘Execute workflow’",
+      "type": "n8n-nodes-base.manualTrigger",
+      "typeVersion": 1,
+      "position": [180, 360],
+      "parameters": {}
+    },
+    {
+      "id": "829f42d9-bcbb-4978-b86c-e977591d136c",
+      "name": "Ticket Input",
+      "type": "n8n-nodes-base.set",
+      "typeVersion": 3.4,
+      "position": [390, 360],
+      "parameters": {
+        "mode": "raw",
+        "jsonOutput": "{\n  \"customer_id\": \"CUST-003\",\n  \"message\": \"I was charged twice for transaction TX-1003. Please help me understand what happened.\"\n}",
+        "options": {}
+      }
+    },
+    {
+      "id": "edab7bb5-788f-4d35-a947-4d7d6cb62291",
+      "name": "AI Agent",
+      "type": "@n8n/n8n-nodes-langchain.agent",
+      "typeVersion": 3.1,
+      "position": [650, 220],
+      "parameters": {
+        "promptType": "define",
+        "text": "={{ $json.customer_id ? 'Customer: ' + $json.customer_id + '\\nMessage: ' + $json.message : $json.chatInput }}",
+        "hasOutputParser": true,
+        "options": {
+          "systemMessage": "You are the main support automation coordinator. For a CUST-### ID, ask Customer Context Agent for customer context. Ask Risk Agent to classify the ticket and assess risk using that context. Ask Customer Reply Agent to draft a reply using the original message and specialist results. Do not invent facts. Return the required structured fields."
+        }
+      }
+    },
+    {
+      "id": "ee2f0055-611a-4b34-b938-85b2880c45b5",
+      "name": "OpenAI Chat Model",
+      "type": "@n8n/n8n-nodes-langchain.lmChatOpenAi",
+      "typeVersion": 1.3,
+      "position": [500, 520],
+      "parameters": {
+        "model": {
+          "__rl": true,
+          "mode": "list",
+          "value": "gpt-5-mini"
+        },
+        "builtInTools": {},
+        "options": {}
+      }
+    },
+    {
+      "id": "1f98aef8-8f83-4c5e-a399-e2c31e93f191",
+      "name": "Simple Memory",
+      "type": "@n8n/n8n-nodes-langchain.memoryBufferWindow",
+      "typeVersion": 1.3,
+      "position": [650, 520],
+      "parameters": {
+        "sessionIdType": "customKey",
+        "sessionKey": "={{ $json.sessionId || 'manual-session' }}",
+        "contextWindowLength": 10
+      }
+    },
+    {
+      "id": "4f5db3da-1b92-430c-acfb-bd57e1189444",
+      "name": "Priority Parser",
+      "type": "@n8n/n8n-nodes-langchain.outputParserStructured",
+      "typeVersion": 1.3,
+      "position": [820, 520],
+      "parameters": {
+        "schemaType": "manual",
+        "inputSchema": "{\n  \"type\": \"object\",\n  \"properties\": {\n    \"priority\": { \"type\": \"string\", \"enum\": [\"low\", \"medium\", \"high\"] },\n    \"sentiment\": { \"type\": \"string\", \"enum\": [\"neutral\", \"frustrated\", \"angry\"] },\n    \"recommended_action\": { \"type\": \"string\", \"enum\": [\"auto_reply\", \"investigate\", \"escalate\"] },\n    \"summary\": { \"type\": \"string\" },\n    \"risk_note\": { \"type\": \"string\" },\n    \"customer_reply\": { \"type\": \"string\" }\n  },\n  \"required\": [\"priority\", \"sentiment\", \"recommended_action\", \"summary\", \"risk_note\", \"customer_reply\"],\n  \"additionalProperties\": false\n}"
+      }
+    },
+    {
+      "id": "2bc51e34-af55-4dd2-a19e-f5cc2567a53a",
+      "name": "Customer Reply Agent",
+      "type": "@n8n/n8n-nodes-langchain.agentTool",
+      "typeVersion": 3,
+      "position": [360, 700],
+      "parameters": {
+        "text": "={{ /*n8n-auto-generated-fromAI-override*/ $fromAI('Prompt__User_Message_', ``, 'string') }}",
+        "options": {
+          "systemMessage": "You are a customer support communication specialist. Write a short, friendly and professional reply using the ticket context and the risk-agent result. Do not change or re-decide priority. Do not mention internal risk notes or priority. Do not promise refunds, compensation or timelines, and do not invent facts."
+        }
+      }
+    },
+    {
+      "id": "809612d1-c8b2-43df-95f5-d6308a971a66",
+      "name": "Risk Agent",
+      "type": "@n8n/n8n-nodes-langchain.agentTool",
+      "typeVersion": 3,
+      "position": [610, 700],
+      "parameters": {
+        "text": "={{ /*n8n-auto-generated-fromAI-override*/ $fromAI('Prompt__User_Message_', ``, 'string') }}",
+        "options": {
+          "systemMessage": "You are a payment risk and escalation specialist. Review the ticket context and identify customer risk, complaint risk, urgency, and whether escalation is needed. Judge impact and risk, not tone. Return priority (low, medium or high) and a short internal risk note."
+        }
+      }
+    },
+    {
+      "id": "0af16fd7-37bc-4f33-b217-898296b5c813",
+      "name": "Customer Context Agent",
+      "type": "@n8n/n8n-nodes-langchain.agentTool",
+      "typeVersion": 3,
+      "position": [870, 700],
+      "parameters": {
+        "text": "={{ /*n8n-auto-generated-fromAI-override*/ $fromAI('Prompt__User_Message_', ``, 'string') }}",
+        "options": {
+          "systemMessage": "You are the customer context specialist. Use the Get row(s) in Data table tool to look up a CUST-### ID. Report the customer's type, transaction volume, previous incidents, and whether they are critical. If no record is found, say so and do not guess. Do not classify priority or write to the customer."
+        }
+      }
+    },
+    {
+      "id": "05c20378-93c0-4f48-9d20-dbb10d194eaf",
+      "name": "Get row(s) in Data table",
+      "type": "n8n-nodes-base.dataTable",
+      "typeVersion": 1.1,
+      "position": [1130, 700],
+      "parameters": {
+        "resource": "row",
+        "operation": "get",
+        "dataTableId": {
+          "__rl": true,
+          "mode": "name",
+          "value": "customer_context"
+        },
+        "returnAll": false,
+        "filters": {
+          "conditions": [
+            {
+              "keyName": "customer_id",
+              "keyValue": "={{ $fromAI('customer_id', 'Customer ID in CUST-### format', 'string') }}"
+            }
+          ]
+        },
+        "options": {}
+      }
+    },
+    {
+      "id": "43f85e07-2300-4f5f-b0ec-89c81574365c",
+      "name": "Reply Agent Chat Model",
+      "type": "@n8n/n8n-nodes-langchain.lmChatOpenAi",
+      "typeVersion": 1.3,
+      "position": [360, 880],
+      "parameters": {
+        "model": {
+          "__rl": true,
+          "mode": "list",
+          "value": "gpt-5-mini"
+        },
+        "options": {}
+      }
+    },
+    {
+      "id": "e7bcd4bd-1dca-4958-bdb5-2212db4f9389",
+      "name": "Risk Agent Chat Model",
+      "type": "@n8n/n8n-nodes-langchain.lmChatOpenAi",
+      "typeVersion": 1.3,
+      "position": [610, 880],
+      "parameters": {
+        "model": {
+          "__rl": true,
+          "mode": "list",
+          "value": "gpt-5-mini"
+        },
+        "options": {}
+      }
+    },
+    {
+      "id": "4845d50c-3e63-4fe7-b2b5-2bc96fc36184",
+      "name": "Customer Context Chat Model",
+      "type": "@n8n/n8n-nodes-langchain.lmChatOpenAi",
+      "typeVersion": 1.3,
+      "position": [870, 880],
+      "parameters": {
+        "model": {
+          "__rl": true,
+          "mode": "list",
+          "value": "gpt-5-mini"
+        },
+        "options": {}
+      }
+    },
+    {
+      "id": "47bfaa13-c4e2-4d44-b2a9-3ac70ca94f9e",
+      "name": "Switch",
+      "type": "n8n-nodes-base.switch",
+      "typeVersion": 3.4,
+      "position": [910, 220],
       "parameters": {
         "rules": {
           "values": [
@@ -26,13 +219,12 @@
                 },
                 "conditions": [
                   {
-                    "leftValue": "={{ $json.priority }}",
+                    "leftValue": "={{ $json.output.priority }}",
                     "rightValue": "low",
                     "operator": {
                       "type": "string",
                       "operation": "equals"
-                    },
-                    "id": "5ccb0a74-02d4-40a4-802f-6f86b38c9a03"
+                    }
                   }
                 ],
                 "combinator": "and"
@@ -48,8 +240,7 @@
                 },
                 "conditions": [
                   {
-                    "id": "3caec674-ea0f-4172-8703-4f3f006481e9",
-                    "leftValue": "={{ $json.priority }}",
+                    "leftValue": "={{ $json.output.priority }}",
                     "rightValue": "medium",
                     "operator": {
                       "type": "string",
@@ -71,8 +262,7 @@
                 },
                 "conditions": [
                   {
-                    "id": "c792d7b1-36d4-4f0b-a99e-f3bf96aaeb53",
-                    "leftValue": "={{ $json.priority }}",
+                    "leftValue": "={{ $json.output.priority }}",
                     "rightValue": "high",
                     "operator": {
                       "type": "string",
@@ -87,245 +277,118 @@
           ]
         },
         "options": {}
-      },
-      "type": "n8n-nodes-base.switch",
-      "typeVersion": 3.4,
-      "position": [
-        1376,
-        -64
-      ],
-      "id": "511fa696-276d-4ad4-9b61-f1033a0f457e",
-      "name": "Switch"
+      }
     },
     {
-      "parameters": {
-        "promptType": "define",
-        "text": "=You are the main support automation coordinator.\n\nAnalyze the ticket and decide what to do.\n\nYou can ask specialist agents for help:\n- Customer Reply Agent: writes customer-friendly replies\n- Risk Agent: checks escalation and business risk\n\nTicket:\nCustomer: {{ $json.customer }}\nMessage: {{ $json.message }}\n\nYour job:\n1. Decide the priority: low, medium, or high\n2. Ask the specialist agents if useful\n3. Return ONLY JSON:\n\n{\n  \"priority\": \"low | medium | high\",\n  \"sentiment\": \"neutral | frustrated | angry\",\n  \"recommended_action\": \"auto_reply | investigate | escalate\",\n  \"summary\": \"short summary\",\n  \"customer_reply\": \"reply from customer reply agent\",\n  \"risk_note\": \"risk note from risk agent\"\n}",
-        "options": {
-          "systemMessage": "Always talk with the Customer Reply Agent and with the Risk Agent"
-        }
-      },
-      "type": "@n8n/n8n-nodes-langchain.agent",
-      "typeVersion": 3.1,
-      "position": [
-        400,
-        -48
-      ],
-      "id": "ab41d2e9-0a98-47ea-9251-f23ef98d2e70",
-      "name": "AI Agent"
-    },
-    {
-      "parameters": {
-        "model": {
-          "__rl": true,
-          "mode": "list",
-          "value": "gpt-5-mini"
-        },
-        "builtInTools": {},
-        "options": {}
-      },
-      "type": "@n8n/n8n-nodes-langchain.lmChatOpenAi",
-      "typeVersion": 1.3,
-      "position": [
-        80,
-        192
-      ],
-      "id": "bafe6a95-3268-4f90-8dad-0e977823c8e8",
-      "name": "OpenAI Chat Model"
-    },
-    {
-      "parameters": {
-        "sessionIdType": "customKey",
-        "sessionKey": "1"
-      },
-      "type": "@n8n/n8n-nodes-langchain.memoryBufferWindow",
-      "typeVersion": 1.3,
-      "position": [
-        384,
-        192
-      ],
-      "id": "b42adfc1-b31b-4bc8-aade-d5d92758d671",
-      "name": "Simple Memory"
-    },
-    {
-      "parameters": {
-        "mode": "raw",
-        "jsonOutput": "{\n  \"ticket_id\": \"WL-1026\",\n  \"customer\": \"Maarten\",\n  \"message\": \"I was charged twice. I need this fixed today or I will file a complaint.\"\n}",
-        "options": {}
-      },
+      "id": "3674b425-d012-42c9-bb4d-01d61ecabffb",
+      "name": "Low Priority Action",
       "type": "n8n-nodes-base.set",
       "typeVersion": 3.4,
-      "position": [
-        16,
-        -48
-      ],
-      "id": "8d055d43-cd0c-4aa1-8728-1879947aa62f",
-      "name": "Ticket Input"
-    },
-    {
-      "parameters": {
-        "jsCode": "const raw = $json.output || $json;\n\nlet parsed;\n\nif (typeof raw === 'string') {\n  parsed = JSON.parse(raw);\n} else {\n  parsed = raw;\n}\n\nreturn [\n  {\n    json: parsed\n  }\n];"
-      },
-      "type": "n8n-nodes-base.code",
-      "typeVersion": 2,
-      "position": [
-        1152,
-        -48
-      ],
-      "id": "72cbfdd4-963f-43e9-a32b-08262c65ba7e",
-      "name": "Code in JavaScript"
-    },
-    {
+      "position": [1160, 100],
       "parameters": {
         "mode": "raw",
-        "jsonOutput": "{\n  \"action\": \"AUTO_REPLY\",\n  \"team\": \"Self-service support\",\n  \"message\": \"✅ Low priority ticket. Send automatic reply.\",\n  \"customer_reply\": \"{{ $json.customer_reply }}\"\n}",
+        "jsonOutput": "{\n  \"priority\": \"{{ $json.output.priority }}\",\n  \"action\": \"AUTO_REPLY\",\n  \"team\": \"Self-service support\",\n  \"customer_reply\": \"{{ $json.output.customer_reply }}\"\n}",
         "options": {}
-      },
-      "type": "n8n-nodes-base.set",
-      "typeVersion": 3.4,
-      "position": [
-        1600,
-        -240
-      ],
-      "id": "a4d001ff-29d5-4cc6-8091-f9b6efa116c2",
-      "name": "Low Priority Action"
+      }
     },
     {
+      "id": "57023f6e-3f99-4bc1-a796-eb7474ab4b44",
+      "name": "Medium Priority Action",
+      "type": "n8n-nodes-base.set",
+      "typeVersion": 3.4,
+      "position": [1160, 220],
       "parameters": {
         "mode": "raw",
-        "jsonOutput": "{\n  \"action\": \"INVESTIGATE\",\n  \"team\": \"Support team\",\n  \"message\": \"🔎 Medium priority ticket. Needs human review.\",\n  \"summary\": \"{{ $json.summary }}\",\n  \"customer_reply\": \"{{ $json.customer_reply }}\"\n}",
+        "jsonOutput": "{\n  \"priority\": \"{{ $json.output.priority }}\",\n  \"action\": \"INVESTIGATE\",\n  \"team\": \"Support team\",\n  \"summary\": \"{{ $json.output.summary }}\",\n  \"customer_reply\": \"{{ $json.output.customer_reply }}\"\n}",
         "options": {}
-      },
-      "type": "n8n-nodes-base.set",
-      "typeVersion": 3.4,
-      "position": [
-        1600,
-        -48
-      ],
-      "id": "7fbb9f22-3f0d-437f-8a4c-670f65382598",
-      "name": "Medium Priority Action"
+      }
     },
     {
+      "id": "b4ae4844-9a09-45d6-bbbe-f14adf989cc7",
+      "name": "High Priority Action",
+      "type": "n8n-nodes-base.set",
+      "typeVersion": 3.4,
+      "position": [1160, 340],
       "parameters": {
         "mode": "raw",
-        "jsonOutput": "{\n  \"action\": \"ESCALATE\",\n  \"team\": \"Payments escalation team\",\n  \"sla\": \"Respond within 30 minutes\",\n  \"message\": \"🚨 High priority ticket. Escalate immediately.\",\n  \"summary\": \"{{ $json.summary }}\",\n  \"customer_reply\": \"{{ $json.customer_reply }}\"\n}",
+        "jsonOutput": "{\n  \"priority\": \"{{ $json.output.priority }}\",\n  \"action\": \"ESCALATE\",\n  \"team\": \"Payments escalation team\",\n  \"summary\": \"{{ $json.output.summary }}\",\n  \"customer_reply\": \"{{ $json.output.customer_reply }}\"\n}",
         "options": {}
-      },
-      "type": "n8n-nodes-base.set",
-      "typeVersion": 3.4,
-      "position": [
-        1600,
-        176
-      ],
-      "id": "c3e22bca-d35a-4471-b982-1b04b127a847",
-      "name": "High Priority Action"
-    },
-    {
-      "parameters": {
-        "text": "={{ /*n8n-auto-generated-fromAI-override*/ $fromAI('Prompt__User_Message_', ``, 'string') }}",
-        "options": {
-          "systemMessage": "You are a customer support communication specialist.\n\nWrite a short, friendly and professional reply to the customer.\n\nUse the ticket context provided by the main agent.\n\nReturn only the reply text."
-        }
-      },
-      "type": "@n8n/n8n-nodes-langchain.agentTool",
-      "typeVersion": 3,
-      "position": [
-        512,
-        192
-      ],
-      "id": "c295aa55-68d1-4480-ac2f-76ae11af0be4",
-      "name": "Customer Reply Agent"
-    },
-    {
-      "parameters": {
-        "text": "={{ /*n8n-auto-generated-fromAI-override*/ $fromAI('Prompt__User_Message_', ``, 'string') }}",
-        "options": {
-          "systemMessage": "You are a payment risk and escalation specialist.\n\nReview the ticket context.\n\nIdentify:\n- customer risk\n- complaint risk\n- urgency\n- whether escalation is needed\n\nReturn a short internal risk note."
-        }
-      },
-      "type": "@n8n/n8n-nodes-langchain.agentTool",
-      "typeVersion": 3,
-      "position": [
-        800,
-        192
-      ],
-      "id": "37fa80c2-9afe-4ea8-96f5-0fc9e97d3710",
-      "name": "Risk Agent"
-    },
-    {
-      "parameters": {
-        "model": {
-          "__rl": true,
-          "mode": "list",
-          "value": "gpt-5-mini"
-        },
-        "builtInTools": {},
-        "options": {}
-      },
-      "type": "@n8n/n8n-nodes-langchain.lmChatOpenAi",
-      "typeVersion": 1.3,
-      "position": [
-        384,
-        416
-      ],
-      "id": "bb2f4099-3743-4a3a-bb66-3c484865c1a0",
-      "name": "OpenAI Chat Model1"
-    },
-    {
-      "parameters": {
-        "model": {
-          "__rl": true,
-          "mode": "list",
-          "value": "gpt-5-mini"
-        },
-        "builtInTools": {},
-        "options": {}
-      },
-      "type": "@n8n/n8n-nodes-langchain.lmChatOpenAi",
-      "typeVersion": 1.3,
-      "position": [
-        736,
-        432
-      ],
-      "id": "77a7b8eb-654e-4049-99cc-3e23d93184d0",
-      "name": "OpenAI Chat Model2"
-    },
-    {
-      "parameters": {
-        "sessionIdType": "customKey",
-        "sessionKey": "2"
-      },
-      "type": "@n8n/n8n-nodes-langchain.memoryBufferWindow",
-      "typeVersion": 1.3,
-      "position": [
-        528,
-        416
-      ],
-      "id": "a592da05-f105-4076-8f2b-f3902d087091",
-      "name": "Simple Memory1"
-    },
-    {
-      "parameters": {
-        "sessionIdType": "customKey",
-        "sessionKey": "1"
-      },
-      "type": "@n8n/n8n-nodes-langchain.memoryBufferWindow",
-      "typeVersion": 1.3,
-      "position": [
-        1024,
-        432
-      ],
-      "id": "d72dd613-3a39-435a-9303-940687082cf6",
-      "name": "Simple Memory2"
+      }
     }
   ],
   "connections": {
+    "When chat message received": {
+      "main": [
+        [
+          {
+            "node": "AI Agent",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
     "When clicking ‘Execute workflow’": {
       "main": [
         [
           {
             "node": "Ticket Input",
             "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Ticket Input": {
+      "main": [
+        [
+          {
+            "node": "AI Agent",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "AI Agent": {
+      "main": [
+        [
+          {
+            "node": "Switch",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "OpenAI Chat Model": {
+      "ai_languageModel": [
+        [
+          {
+            "node": "AI Agent",
+            "type": "ai_languageModel",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Simple Memory": {
+      "ai_memory": [
+        [
+          {
+            "node": "AI Agent",
+            "type": "ai_memory",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Priority Parser": {
+      "ai_outputParser": [
+        [
+          {
+            "node": "AI Agent",
+            "type": "ai_outputParser",
             "index": 0
           }
         ]
@@ -356,71 +419,6 @@
         ]
       ]
     },
-    "AI Agent": {
-      "main": [
-        [
-          {
-            "node": "Code in JavaScript",
-            "type": "main",
-            "index": 0
-          }
-        ]
-      ]
-    },
-    "OpenAI Chat Model": {
-      "ai_languageModel": [
-        [
-          {
-            "node": "AI Agent",
-            "type": "ai_languageModel",
-            "index": 0
-          }
-        ]
-      ]
-    },
-    "Simple Memory": {
-      "ai_memory": [
-        [
-          {
-            "node": "AI Agent",
-            "type": "ai_memory",
-            "index": 0
-          }
-        ]
-      ]
-    },
-    "Ticket Input": {
-      "main": [
-        [
-          {
-            "node": "AI Agent",
-            "type": "main",
-            "index": 0
-          }
-        ]
-      ]
-    },
-    "Code in JavaScript": {
-      "main": [
-        [
-          {
-            "node": "Switch",
-            "type": "main",
-            "index": 0
-          }
-        ]
-      ]
-    },
-    "Low Priority Action": {
-      "main": [
-        []
-      ]
-    },
-    "High Priority Action": {
-      "main": [
-        []
-      ]
-    },
     "Customer Reply Agent": {
       "ai_tool": [
         [
@@ -443,7 +441,29 @@
         ]
       ]
     },
-    "OpenAI Chat Model1": {
+    "Customer Context Agent": {
+      "ai_tool": [
+        [
+          {
+            "node": "AI Agent",
+            "type": "ai_tool",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Get row(s) in Data table": {
+      "ai_tool": [
+        [
+          {
+            "node": "Customer Context Agent",
+            "type": "ai_tool",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Reply Agent Chat Model": {
       "ai_languageModel": [
         [
           {
@@ -454,7 +474,7 @@
         ]
       ]
     },
-    "OpenAI Chat Model2": {
+    "Risk Agent Chat Model": {
       "ai_languageModel": [
         [
           {
@@ -465,28 +485,22 @@
         ]
       ]
     },
-    "Simple Memory1": {
-      "ai_memory": [
+    "Customer Context Chat Model": {
+      "ai_languageModel": [
         [
           {
-            "node": "Customer Reply Agent",
-            "type": "ai_memory",
-            "index": 0
-          }
-        ]
-      ]
-    },
-    "Simple Memory2": {
-      "ai_memory": [
-        [
-          {
-            "node": "Risk Agent",
-            "type": "ai_memory",
+            "node": "Customer Context Agent",
+            "type": "ai_languageModel",
             "index": 0
           }
         ]
       ]
     }
   },
-  "pinData": {}
+  "active": false,
+  "settings": {},
+  "versionId": "6ee72e0f-74a0-45ec-a4af-8848e9547fd1",
+  "meta": {
+    "templateCredsSetupCompleted": false
+  }
 }
