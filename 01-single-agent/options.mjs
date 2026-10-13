@@ -1,19 +1,17 @@
 import path from 'node:path';
 import { fileURLToPath } from 'node:url';
+import { prioritySchema } from './priority-schema.mjs';
 
 const lessonDirectory = path.dirname(fileURLToPath(import.meta.url));
 
-// n8n: the settings panel of the AI Agent node. SDK: the options object passed to query().
 export function buildOptions() {
   return {
-    // STEP 1: cwd → path.join(lessonDirectory, 'claude-project') so the agent works inside its own project folder.
-    // STEP 1: settingSources → ['project'] so query() loads claude-project/CLAUDE.md (the n8n "System Message").
-    // STEP 1: systemPrompt → { type: 'preset', preset: 'claude_code' } (CLAUDE.md is added on top of the preset).
-    // STEP 1: tools → [] and disallowedTools → ['WebSearch', 'WebFetch', 'Bash']: this agent only reads and answers.
-    // STEP 1: maxTurns → 3 (n8n: "Max Iterations").
-    // STEP 1: outputFormat → { type: 'json_schema', schema: prioritySchema } (Priority Parser).
+    cwd: path.join(lessonDirectory, 'claude-project'),
+    settingSources: ['project'],
+    systemPrompt: { type: 'preset', preset: 'claude_code' },
+    tools: [],
+    disallowedTools: ['WebSearch', 'WebFetch', 'Bash'],
+    maxTurns: 3,
+    outputFormat: { type: 'json_schema', schema: prioritySchema },
   };
 }
-
-// Keeps the import used until Step 1 fills in cwd.
-export const projectDirectory = path.join(lessonDirectory, 'claude-project');

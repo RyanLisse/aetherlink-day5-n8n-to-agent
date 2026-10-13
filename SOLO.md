@@ -216,6 +216,7 @@ you> exit
 
 The default chat resumes the previous `sessionId`; `--no-memory` starts a new query each turn.
 Every `npm run lesson1` is a fresh session on purpose (one ticket = one case).
+Free-form chat is the default; use `npm run chat -- --lesson 1 --structured` to keep the lesson schema.
 
 **Run:**
 

@@ -79,6 +79,7 @@ npm run verify
 ```
 
 The default backend is `claude-code`. It uses the Claude Code login on this machine. Use `--backend sdk` only when you want to use an API key.
+The Claude Code subprocess does not inherit `ANTHROPIC_API_KEY`; that key is for the `sdk` backend.
 
 ## Docker
 
@@ -96,7 +97,7 @@ To run a lesson with Claude Code, create a token on the host with `claude setup-
 docker run --rm -it -e CLAUDE_CODE_OAUTH_TOKEN w4 npm run lesson1 -- MSG-01
 ```
 
-You can also pass `ANTHROPIC_API_KEY` and select `--backend sdk`. The `sdk-login` backend is for your own local learning only. Anthropic's SDK documentation says third-party products may not offer claude.ai login for SDK agents without approval.
+Inside Docker, `ANTHROPIC_API_KEY` is for `--backend sdk`; `claude-code` uses `CLAUDE_CODE_OAUTH_TOKEN`. The `sdk-login` backend is for your own local learning only. Anthropic's SDK documentation says third-party products may not offer claude.ai login for SDK agents without approval.
 
 Do not mount `~/.claude` as the container login method. On macOS, Claude Code stores login credentials in the Keychain.
 

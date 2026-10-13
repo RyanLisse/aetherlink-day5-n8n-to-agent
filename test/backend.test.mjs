@@ -1,7 +1,17 @@
 import assert from 'node:assert/strict';
+import { EventEmitter } from 'node:events';
+import { PassThrough } from 'node:stream';
 import { test } from 'node:test';
-import { backendLabel, selectBackend, toClaudeArgs } from '../lib/backend.mjs';
+import {
+  assertSuccessfulResult,
+  backendLabel,
+  failedResultMessage,
+  runClaudeCode,
+  selectBackend,
+  toClaudeArgs,
+} from '../lib/backend.mjs';
 import { formatDoctor, getDoctorReport } from '../lib/doctor.mjs';
+import { printEvent } from '../lib/run.mjs';
 
 test('backend selection follows argument, environment, key, then Claude Code defaults', () => {
   assert.equal(selectBackend({ argument: 'sdk-login', env: { AGENT_BACKEND: 'sdk' } }), 'sdk-login');
@@ -55,6 +65,49 @@ test('toClaudeArgs maps lesson options to Claude Code flags', () => {
   assert.ok(args.includes('--resume') && args.includes('session-123'));
 });
 
+test('failed result events print diagnostics and throw', async () => {
+  const event = { type: 'result', subtype: 'error_api', is_error: true, errors: ['request rejected'] };
+  const child = new EventEmitter();
+  child.stdout = new PassThrough();
+  child.stderr = new PassThrough();
+  const originalApiKey = process.env.ANTHROPIC_API_KEY;
+  process.env.ANTHROPIC_API_KEY = 'test-key';
+  let childOptions;
+  const originalError = console.error;
+  const diagnostics = [];
+  console.error = (message) => diagnostics.push(message);
+
+  try {
+    await assert.rejects(runClaudeCode({
+      command: 'claude',
+      prompt: 'hello',
+      options: { cwd: process.cwd() },
+      onEvent: printEvent,
+      spawnImpl(_command, _args, options) {
+        childOptions = options;
+        process.nextTick(() => {
+          child.stdout.write(`${JSON.stringify(event)}\n`);
+          child.stdout.end();
+          child.stderr.end();
+          child.emit('close', 0, null);
+        });
+        return child;
+      },
+    }), /Agent run failed \(error_api\): request rejected/);
+    assert.equal(childOptions.env.ANTHROPIC_API_KEY, undefined);
+    assert.equal(childOptions.env.PATH, process.env.PATH);
+    assert.match(diagnostics.join('\n'), /request rejected/);
+    assert.match(failedResultMessage(event), /request rejected/);
+    assert.throws(() => assertSuccessfulResult(event), /request rejected/);
+  } finally {
+    console.error = originalError;
+    if (originalApiKey === undefined) {
+      delete process.env.ANTHROPIC_API_KEY;
+    } else {
+      process.env.ANTHROPIC_API_KEY = originalApiKey;
+    }
+  }
+});
 test('doctor reports a missing CLI without failing', () => {
   const report = getDoctorReport({ env: {}, platform: 'linux', pathValue: '' });
   assert.match(report, /Claude Code: not found/);

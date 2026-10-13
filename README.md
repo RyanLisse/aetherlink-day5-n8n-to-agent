@@ -74,7 +74,7 @@ See what a step adds: `git diff origin/main origin/step-1`,
 | Command | What it does | Needs a key? |
 | --- | --- | --- |
 | `npm run verify` | Tests plus offline dry runs (and the MCP smoke test from Step 3) | no |
-| `npm run chat [-- --lesson 1|2|3]` | Interactive chat; `--no-memory` starts a fresh session per turn | yes |
+| `npm run chat [-- --lesson 1|2|3] [--structured]` | Interactive chat; free-form by default, `--structured` keeps the lesson schema, `--no-memory` starts a fresh session per turn | yes |
 | `npm run chat -- --dry-run` | Print the default chat options without calling a model | no |
 | `npm run lesson1 -- MSG-01 [--dry-run]` | Step 1: one agent | yes, unless `--dry-run` |
 | `npm run lesson2 -- MSG-05 [--dry-run]` | Step 2: orchestrator + subagents | yes, unless `--dry-run` |
