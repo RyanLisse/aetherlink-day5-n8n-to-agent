@@ -497,7 +497,8 @@ it is sent; the MCP servers do not change records.
 
 **Goal:** verify each MCP server without making a model call, then follow the data path.
 
-**Facilitator demo:** run `npm run smoke:mcp`. Point out `MCP server OK — no model was called.`
+**Facilitator demo:** run `npm run smoke:mcp`. Point out
+`MCP servers OK — read-only lookups; no model was called.`
 and show the dry-run command's MCP configuration. A real trace labels calls `[tool_use]`.
 
 **Your turn:** check out the Step 3 starter files, install both dependency sets, and run the smoke test.
@@ -514,7 +515,7 @@ npm run smoke:mcp
 The nested install is for the server's own dependencies. It does not start the servers: the SDK
 starts each on demand over stdio. Do not start them yourself. The smoke test calls the tools on
 their own (no model) and ends with
-`MCP server OK — no model was called.`
+`MCP servers OK — read-only lookups; no model was called.`
 
 **Read the read-only tools in `03-mcp/transaction-mcp/server.js`:**
 
@@ -526,7 +527,7 @@ server.registerTool('get_transaction', {
   inputSchema: { transaction_id: z.string().regex(/^TX-\d{4}$/) },
   annotations: { title: 'Get transaction', readOnlyHint: true, openWorldHint: false },
 }, async ({ transaction_id }) => {
-  const transaction = findTransaction(await load(), transaction_id);
+  const transaction = findTransaction(await readWorkbook(), transaction_id);
   return transaction ? ok(transaction) : notFound(transaction_id);
 });
 
@@ -534,12 +535,14 @@ server.registerTool('list_transactions', {
   description: 'List transactions with optional status, customer, or fraud filters.',
   inputSchema: {
     status: z.enum(['COMPLETED', 'DECLINED', 'PENDING', 'REFUNDED', 'FAILED', 'DUPLICATE']).optional(),
-    customer: z.string().optional(),
-    fraud_flag: z.enum(['yes', 'no']).optional(),
-    limit: z.number().int().min(1).max(100).optional(),
+    customer: z.string().min(1).optional(),
+    fraud_flag: z.enum(['Yes', 'No']).optional(),
+    limit: z.number().int().min(1).max(50).optional(),
   },
   annotations: { title: 'List transactions', readOnlyHint: true, openWorldHint: false },
-}, async (filters) => ok(listTransactions(await load(), filters)));
+}, async ({ status: wanted, customer, fraud_flag, limit }) => (
+  ok(listTransactions(await readWorkbook(), { status: wanted, customer, fraudFlag: fraud_flag, limit }))
+));
 
 await server.connect(new StdioServerTransport());
 ```
@@ -556,7 +559,7 @@ const lessonDirectory = path.dirname(fileURLToPath(import.meta.url));
 const transactionServer = path.join(lessonDirectory, 'transaction-mcp', 'server.js');
 const customerServer = path.join(lessonDirectory, 'transaction-mcp', 'customers.js');
 const workbook = defaultWorkbookPath;
-const customerCsv = path.resolve(lessonDirectory, '..', 'docs', 'customer_context.csv');
+const customerContext = path.join(path.dirname(lessonDirectory), 'docs', 'customer_context.csv');
 
 export function buildOptions() {
   return {
@@ -584,7 +587,7 @@ export function buildOptions() {
         type: 'stdio',
         command: 'node',
         args: [customerServer],
-        env: { CUSTOMER_CONTEXT_CSV: customerCsv },
+        env: { CUSTOMER_CONTEXT_CSV: customerContext },
       },
     },
   };
@@ -651,7 +654,8 @@ Critical customer: yes | no
 - When a message contains a customer ID (format `CUST-###`), use `customer-context-agent` and `get_customer`.
 - When it contains a transaction ID (format `TX-####`), `risk-agent` uses `get_transaction`.
 - Never read customer or transaction files yourself; data only arrives through the tools.
-- In the final output, add `External data:` listing facts from `get_customer` and `get_transaction` (or `none`).
+- In the final output, add `External data:` listing facts from `get_customer`, `get_transaction` and `list_transactions` (or `none`).
+- The customer reply in `output/` is a draft for a person to review before sending.
 
 ```
 
