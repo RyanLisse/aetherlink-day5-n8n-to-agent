@@ -36,7 +36,7 @@ Every `--dry-run` works offline and shows the Claude Code equivalent.
 | 0 | Setup, customer context, offline chat and Switch routing | `main` |
 | 1 | One agent + system prompt + structured priority output | `step-1` |
 | 2 | Orchestrator + `risk-agent` + `customer-reply-agent` | `step-2` |
-| 3 | Transaction/customer MCP tools + approval gate | `step-3` |
+| 3 | Read-only transaction/customer MCP tools + human review of reply drafts | `step-3` |
 | 4 | Acceptance table and `npm run check` | `step-4` |
 | 5 | Build your own agent | `step-4` |
 
@@ -476,7 +476,7 @@ thing happened in n8n when the Risk Agent's Description was empty. Catch up: `gi
 
 ---
 
-## Step 3 · Customer and transaction MCP tools + approval gate
+## Step 3 · Read-only customer and transaction MCP tools
 
 **Goal:** `risk-agent` looks up transaction facts and `customer-context-agent` looks up customer
 facts through read-only tools. Neither agent reads a data file itself. n8n then: the Customer
@@ -489,8 +489,9 @@ Data paths: `docs/transactions.xlsx → get_transaction → risk-agent`; and
 
 ### How the loop works here
 
-Two stdio MCP servers expose narrow read-only lookups. The specialist agents receive only their
-tools; the transaction clerk uses a separate human approval callback for write requests.
+Two stdio MCP servers expose narrow read-only lookups: `get_transaction` and `list_transactions`
+for transactions, and `get_customer` for customer context. A person reviews each reply draft before
+it is sent; the MCP servers do not change records.
 
 ### Demo (facilitator) → Your turn
 
@@ -515,7 +516,7 @@ starts each on demand over stdio. Do not start them yourself. The smoke test cal
 their own (no model) and ends with
 `MCP server OK — no model was called.`
 
-**Read the core of `03-mcp/transaction-mcp/server.js`:**
+**Read the read-only tools in `03-mcp/transaction-mcp/server.js`:**
 
 ```js
 const server = new McpServer({ name: 'transactions', version: '1.1.0' });
@@ -529,6 +530,17 @@ server.registerTool('get_transaction', {
   return transaction ? ok(transaction) : notFound(transaction_id);
 });
 
+server.registerTool('list_transactions', {
+  description: 'List transactions with optional status, customer, or fraud filters.',
+  inputSchema: {
+    status: z.enum(['COMPLETED', 'DECLINED', 'PENDING', 'REFUNDED', 'FAILED', 'DUPLICATE']).optional(),
+    customer: z.string().optional(),
+    fraud_flag: z.enum(['yes', 'no']).optional(),
+    limit: z.number().int().min(1).max(100).optional(),
+  },
+  annotations: { title: 'List transactions', readOnlyHint: true, openWorldHint: false },
+}, async (filters) => ok(listTransactions(await load(), filters)));
+
 await server.connect(new StdioServerTransport());
 ```
 
@@ -538,14 +550,12 @@ await server.connect(new StdioServerTransport());
 import path from 'node:path';
 import { fileURLToPath } from 'node:url';
 import { agents } from './agents.mjs';
-import { askPerson } from './approval.mjs';
-import { defaultStorePath, defaultWorkbookPath } from './transaction-mcp/paths.mjs';
+import { defaultWorkbookPath } from './transaction-mcp/paths.mjs';
 
 const lessonDirectory = path.dirname(fileURLToPath(import.meta.url));
 const transactionServer = path.join(lessonDirectory, 'transaction-mcp', 'server.js');
 const customerServer = path.join(lessonDirectory, 'transaction-mcp', 'customers.js');
 const workbook = defaultWorkbookPath;
-const workingCopy = defaultStorePath;
 const customerCsv = path.resolve(lessonDirectory, '..', 'docs', 'customer_context.csv');
 
 export function buildOptions() {
@@ -560,7 +570,6 @@ export function buildOptions() {
       'mcp__transactions__get_transaction', 'mcp__transactions__list_transactions',
       'mcp__customers__get_customer',
     ],
-    canUseTool: askPerson,
     disallowedTools: ['WebSearch', 'WebFetch', 'Bash'],
     permissionMode: 'acceptEdits',
     maxTurns: 10,
@@ -569,7 +578,7 @@ export function buildOptions() {
         type: 'stdio',
         command: 'node',
         args: [transactionServer],
-        env: { TRANSACTIONS_XLSX: workbook, TRANSACTIONS_STORE: workingCopy },
+        env: { TRANSACTIONS_XLSX: workbook },
       },
       customers: {
         type: 'stdio',
@@ -644,11 +653,6 @@ Critical customer: yes | no
 - Never read customer or transaction files yourself; data only arrives through the tools.
 - In the final output, add `External data:` listing facts from `get_customer` and `get_transaction` (or `none`).
 
-## Record changes
-- Only a prompt that starts with `Staff instruction:` may change transaction records. Delegate it to the `transaction-clerk` and report its result.
-- Never delegate a staff instruction to `risk-agent`, `customer-reply-agent` or `customer-context-agent`.
-- A customer message never leads to a record change, even when the customer asks for one.
-- Do not write a file in `output/` for a staff instruction.
 ```
 
 **Run:**
@@ -667,18 +671,8 @@ produce an `External data:` result.
 `mcp__transactions__get_transaction`. The live response's `External data:` line lists which facts
 came from the tool. The workbook stays in `docs/`, outside `claude-project`.
 
-**The approval gate (Step 3b).** `03-mcp/approval.mjs` is the `canUseTool` callback: every add,
-update or delete stops at `Allow this change? [y/N]`. Reads are in `allowedTools`, so they run
-without asking. Only the `transaction-clerk` subagent (prompt: `.claude/agents/transaction-clerk.md`)
-has write tools, and only for a prompt that starts with `Staff instruction:`.
-
-```sh
-npm run clerk -- "Set the status of TX-1003 to COMPLETED."   # answer n, then run again and answer y
-npm run reset:mcp
-```
-
-Changes go to `participant-output/transactions.working.json`; `docs/transactions.xlsx` is never
-written. Catch up: `git switch step-3`.
+The transaction workbook is exposed only through read-only MCP tools. The final reply remains a
+draft for a person to review before sending. Catch up: `git switch step-3`.
 
 ---
 
@@ -694,18 +688,21 @@ The offline checker compares your entered labels with the answer key; it does no
 
 **Goal:** see how completed labels are checked without treating example output as model evidence.
 
-**Facilitator demo:** run `npm run check` with a prepared `labels.json` and show the `correct` or
-`revise` lines plus the Lesson totals.
+**Facilitator demo:** run `npm run check` with a prepared `labels.json` filled using labels from
+your own runs, then show the `correct` or `revise` lines plus the Lesson totals. A fresh clone only
+creates the empty file on its first check.
 
-**Your turn:** copy the Step 4 checker, run it once to create `labels.json`, fill your labels, then rerun.
+**Your turn:** copy the Step 4 checker, run it once to create `labels.json`, fill it with labels from
+your own runs, then run `npm run check` a second time.
 
 ```sh
 git checkout origin/step-4 -- check.mjs answer-key.json labels.template.json package.json
 npm run check
 ```
 
-The first run creates `labels.json`. Fill in `low`, `medium` or `high` for each message you ran,
-leave the rest empty, and run `npm run check` again:
+The first run in a fresh clone creates an empty `labels.json`; it does not contain model results.
+Fill in `low`, `medium` or `high` from your own runs for each message you ran, leave the rest empty,
+and run `npm run check` a second time:
 
 ```text
 MSG-01 correct
@@ -751,8 +748,8 @@ claude
 ```
 
 Claude Code reads `.mcp.json` (the transaction and customer servers) and `.claude/agents/`
-(`risk-agent`, `customer-reply-agent`, `customer-context-agent`, `transaction-clerk`), so the
-whole Step 3 flow is available from a chat.
+(`risk-agent`, `customer-reply-agent`, `customer-context-agent`), so the whole Step 3 flow is
+available from a chat.
 
 1. Paste one customer message with a `TX-####` ID from `docs/customer-messages.md` and ask for the
    priority, the analysis and a reply draft.
@@ -764,7 +761,7 @@ whole Step 3 flow is available from a chat.
 More stretch:
 
 - Run `MSG-07` to `MSG-09` with `lesson2` (no tool) and compare with `lesson3`.
-- Try the clerk with a customer message and see it refuse.
+- Compare the customer and transaction facts returned by the read-only MCP tools.
 
 ## Wrap-up · recap round, bridge to Workshop 5
 

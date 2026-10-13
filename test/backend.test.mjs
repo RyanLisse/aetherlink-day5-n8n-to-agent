@@ -2,7 +2,6 @@ import assert from 'node:assert/strict';
 import { test } from 'node:test';
 import { backendLabel, selectBackend, toClaudeArgs } from '../lib/backend.mjs';
 import { formatDoctor, getDoctorReport } from '../lib/doctor.mjs';
-import { runWithBackend } from '../lib/run.mjs';
 
 test('backend selection follows argument, environment, key, then Claude Code defaults', () => {
   assert.equal(selectBackend({ argument: 'sdk-login', env: { AGENT_BACKEND: 'sdk' } }), 'sdk-login');
@@ -28,7 +27,6 @@ test('toClaudeArgs maps lesson options to Claude Code flags', () => {
     mcpServers: { customers: { type: 'stdio', command: 'node', args: ['customers.js'] } },
     outputFormat: { type: 'json_schema', schema: { type: 'object', required: ['priority'] } },
     resume: 'session-123',
-    canUseTool() {},
     hooks: {},
   });
 
@@ -55,18 +53,6 @@ test('toClaudeArgs maps lesson options to Claude Code flags', () => {
     required: ['priority'],
   });
   assert.ok(args.includes('--resume') && args.includes('session-123'));
-});
-
-test('staff instruction with canUseTool is refused in Claude Code mode', async () => {
-  await assert.rejects(
-    runWithBackend({
-      prompt: 'Staff instruction: delete transaction TX-1001',
-      options: { canUseTool() {} },
-      dryRun: false,
-      backendArgument: 'claude-code',
-    }),
-    /canUseTool is SDK-only/,
-  );
 });
 
 test('doctor reports a missing CLI without failing', () => {
