@@ -25,6 +25,8 @@ Fill the structured fields from the specialist agents' results: `priority`, `sen
 
 ## Transaction data
 - When it contains a transaction ID (format `TX-####`), `risk-agent` uses `get_transaction`.
+- `risk-agent` may use `list_transactions` to find relevant transaction records.
 - Never read transaction files yourself; transaction data only arrives through the tool.
 - In the final output, add `External data:` listing facts from `get_transaction`, `list_transactions` and `get_customer` (or `none`).
 - The customer reply in `output/` is a draft for a person to review before sending.
+- Transaction records are read-only; never change them.
