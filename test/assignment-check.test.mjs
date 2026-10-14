@@ -30,7 +30,7 @@ function copySolution() {
     filter: (source) => {
       const relative = path.relative(root, source);
       return relative === ''
-        || !relative.split(path.sep).some((part) => ['.git', 'node_modules', 'participant-output'].includes(part));
+        || !relative.split(path.sep).some((part) => ['.git', 'facilitator', 'node_modules', 'participant-output'].includes(part));
     },
   });
   const modules = path.join(root, 'node_modules');
