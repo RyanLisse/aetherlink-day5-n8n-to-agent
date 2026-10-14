@@ -644,6 +644,12 @@ Ask one question when risk is medium or a fact is missing. Use interactive Claud
 CUST-007 to TX-1007, Vertex Commerce. The amount is €899. The status is FAILED. The note says
 "amount appears reserved." Approve one run with `y`. Deny another run with `N`. Check that a denial
 stops without a retry, another agent, or a draft.
+After approval, inspect `participant-output/transactions.working.json`.
+Check that `issue_details` keeps its current text and appends ` | MSG-07 (customer report): <customer claim>`.
+Treat the added sentence as a customer claim, not a confirmed fact.
+Check that `status` remains `FAILED`.
+Check `participant-output/audit.jsonl` for the update and draft-save entries.
+Check that `participant-output/drafts/MSG-07.md` starts with `DRAFT - a person reviews this before sending.`.
 
 Run MSG-08. TX-1014 has `Fraud Flag Yes`. Check that the workflow reports `ESCALATE` and makes no
 write.
