@@ -825,9 +825,9 @@ Run one update. Show the JSON copy. Then run `npm run reset:mcp`.
 
 1. Add `add_transaction`, `update_transaction` and `delete_transaction` to
    `03-mcp/transaction-mcp/server.js`. Use Zod input schemas.
-2. Save changes in a copy under `03-mcp/transaction-mcp/`.
-   Create the parent folder before you write the temporary file.
-   Add the `npm run reset:mcp` command.
+2. Use the starter `03-mcp/transaction-mcp/store.mjs` to load and save the JSON copy.
+   Add it to `server.js` when you add write tools.
+   Use the starter `03-mcp/transaction-mcp/reset.mjs`; `npm run reset:mcp` removes the copy and drafts.
 3. Create `03-mcp/claude-project/.claude/agents/transaction-agent.md` with `name: transaction-agent`.
    Give it exactly these tools: `get_transaction`, `update_transaction` and `add_transaction`.
 4. Add `transaction-agent` to the SDK `agents` option and the Claude Code agent files.
@@ -847,6 +847,7 @@ Ask a person last. Reads pass without a prompt.
 Allow updates below €100 without a prompt.
 Ask a person before larger updates, adds and deletes.
 Keep the €100 threshold in one constant.
+Use the starter `03-mcp/hook-demo.mjs` with `npm run hook:demo -- small`; it sends fixture JSON to the real hook.
 
 | Situation | Result |
 | --- | --- |
@@ -897,15 +898,14 @@ Show its JSON result.
 4. Create the folder before you save a draft.
 5. Add `drafts` to `.mcp.json` and assignment options in `options.mjs`.
 6. Keep `drafts` out of Step 3 options.
-7. Extend `reset.mjs` and `package.json` to remove drafts.
-8. Create `.claude/agents/customer-reply-agent.md` with `name: customer-reply-agent`.
-9. Give it only `mcp__drafts__save_reply_draft`.
-10. Create `.claude/agents/fraud-check-agent.md` with `name: fraud-check-agent`.
-11. Give it only `get_transaction`, `list_transactions` and `get_customer`.
-12. Make it return the required JSON fields.
-13. Wire both agents in `03-mcp/agents.mjs`.
-14. Let the hook allow draft saves without a prompt.
-15. Audit each draft save in `PostToolUse`.
+7. Create `.claude/agents/customer-reply-agent.md` with `name: customer-reply-agent`.
+8. Give it only `mcp__drafts__save_reply_draft`.
+9. Create `.claude/agents/fraud-check-agent.md` with `name: fraud-check-agent`.
+10. Give it only `get_transaction`, `list_transactions` and `get_customer`.
+11. Make it return the required JSON fields.
+12. Wire both agents in `03-mcp/agents.mjs`.
+13. Let the hook allow draft saves without a prompt.
+14. Audit each draft save in `PostToolUse`.
 
 **Where and why.** Add `drafts-server.js` to save reply files.
 Edit `paths.mjs` to set the default draft folder.
@@ -914,7 +914,6 @@ Edit `fraud-check-agent.md` to define its read-only check.
 Edit `agents.mjs` to set SDK tools.
 Edit `transaction-guard.mjs` to allow and audit drafts.
 Edit `.mcp.json` to load the server in Claude Code.
-Edit `reset.mjs` to remove drafts with the working copy.
 
 **Done when:** the test saves a draft to a temporary folder.
 Check the required header and overwrite behavior.
