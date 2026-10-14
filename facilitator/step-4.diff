@@ -90,7 +90,7 @@ index 8dbd263..9deedd2 100644
    and `docs/n8n-flow-diagram.html`. Only the MCP server reads the workbook.
  - Run `npm run verify` before you push.
 diff --git a/README.md b/README.md
-index 7c7f5e8..2cbe5f6 100644
+index 7c7f5e8..60323c9 100644
 --- a/README.md
 +++ b/README.md
 @@ -83,6 +83,13 @@ See what a step adds: `git diff origin/main origin/step-1`,
@@ -135,7 +135,7 @@ index 7c7f5e8..2cbe5f6 100644
 +Then run `npm run reset:mcp`.
 +
 +**Your turn.** Add the CRUD tools and the copy-on-write store.
-+Create `03-mcp/claude-project/.claude/agents/transaction-agent.md`.
++Create `03-mcp/claude-project/.claude/agents/transaction-agent.md` with `name: transaction-agent`.
 +Wire the agent for the SDK and Claude Code.
 +Keep write tools out of the orchestrator's `allowedTools`.
 +
@@ -184,8 +184,8 @@ index 7c7f5e8..2cbe5f6 100644
 +**Your turn.** Add `drafts-server.js` and the `save_reply_draft` tool.
 +Use `DRAFTS_DIR` and create its folder before saving.
 +Add `drafts` to `.mcp.json` and assignment options only.
-+Add `customer-reply-agent.md` with only the draft tool.
-+Add `fraud-check-agent.md` with only customer and transaction read tools.
++Add `customer-reply-agent.md` with `name: customer-reply-agent` and only the draft tool.
++Add `fraud-check-agent.md` with `name: fraud-check-agent` and read tools only.
 +Wire both agents in `03-mcp/agents.mjs`.
 +Let the hook allow and audit draft saves.
 +Make `npm run reset:mcp` remove drafts.
@@ -243,7 +243,7 @@ index 7c7f5e8..2cbe5f6 100644
  
  ## Earlier version
 diff --git a/SOLO.md b/SOLO.md
-index 1e8ada7..5a60bd9 100644
+index 1e8ada7..75ade7d 100644
 --- a/SOLO.md
 +++ b/SOLO.md
 @@ -683,31 +683,39 @@ draft for a person to review before sending. Catch up: `git switch step-3`.
@@ -360,7 +360,7 @@ index 1e8ada7..5a60bd9 100644
 +2. Save changes in a copy under `03-mcp/transaction-mcp/`.
 +   Create the parent folder before you write the temporary file.
 +   Add the `npm run reset:mcp` command.
-+3. Create `03-mcp/claude-project/.claude/agents/transaction-agent.md`.
++3. Create `03-mcp/claude-project/.claude/agents/transaction-agent.md` with `name: transaction-agent`.
 +   Give it exactly these tools: `get_transaction`, `update_transaction` and `add_transaction`.
 +4. Add `transaction-agent` to the SDK `agents` option and the Claude Code agent files.
 +   Keep write tools out of the orchestrator's `allowedTools`.
@@ -430,9 +430,9 @@ index 1e8ada7..5a60bd9 100644
 +5. Add `drafts` to `.mcp.json` and assignment options in `options.mjs`.
 +6. Keep `drafts` out of Step 3 options.
 +7. Extend `reset.mjs` and `package.json` to remove drafts.
-+8. Create `.claude/agents/customer-reply-agent.md`.
++8. Create `.claude/agents/customer-reply-agent.md` with `name: customer-reply-agent`.
 +9. Give it only `mcp__drafts__save_reply_draft`.
-+10. Create `.claude/agents/fraud-check-agent.md`.
++10. Create `.claude/agents/fraud-check-agent.md` with `name: fraud-check-agent`.
 +11. Give it only `get_transaction`, `list_transactions` and `get_customer`.
 +12. Make it return the required JSON fields.
 +13. Wire both agents in `03-mcp/agents.mjs`.

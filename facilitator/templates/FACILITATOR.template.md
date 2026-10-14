@@ -622,8 +622,10 @@ only read tools. Stop before a write when hold is true or risk is high.
 JSON result.
 
 **Your turn:** add `drafts-server.js` and the draft tool. Use `DRAFTS_DIR`. Add `drafts` to
-`.mcp.json` and assignment options only. Add `customer-reply-agent.md` with only the draft tool.
-Add `fraud-check-agent.md` with only customer and transaction read tools. Wire both agents in
+`.mcp.json` and assignment options only. Add `customer-reply-agent.md` with
+`name: customer-reply-agent` and only the draft tool.
+Add `fraud-check-agent.md` with `name: fraud-check-agent` and customer and transaction read tools.
+Wire both agents in
 `03-mcp/agents.mjs`. Let the hook allow and audit draft saves. Make `npm run reset:mcp` remove drafts.
 
 **Done when:** a test saves and replaces a draft in a temporary folder. It checks the review header.
