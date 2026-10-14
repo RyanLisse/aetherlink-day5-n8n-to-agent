@@ -1179,6 +1179,7 @@ Do not change labels just to pass.
 
 Do the core first: Part 1 and Part 2 (about 35 minutes). Part 3 and Part 4 are stretch.
 Make CORE the room target. Use STRETCH for fast squads or homework.
+The assignment starters are on Step 4.
 
 ### Part 1 · CRUD tools and a transaction agent (core)
 

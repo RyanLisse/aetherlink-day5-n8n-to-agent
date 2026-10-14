@@ -162,7 +162,10 @@ Keep `delete_transaction` out of every agent.
 Run one update. Show the JSON copy.
 Then run `npm run reset:mcp`.
 
-**Your turn.** Add the CRUD tools and the copy-on-write store.
+**Your turn.** Add the CRUD tools.
+Use the starter `03-mcp/transaction-mcp/store.mjs` to load and save the JSON copy.
+Add it to `server.js` when you add write tools.
+Use the starter `03-mcp/transaction-mcp/reset.mjs`; `npm run reset:mcp` removes the working copy and drafts.
 Create `03-mcp/claude-project/.claude/agents/transaction-agent.md` with `name: transaction-agent`.
 Wire the agent for the SDK and Claude Code.
 Keep write tools out of the orchestrator's `allowedTools`.
@@ -182,6 +185,7 @@ Reads pass without a prompt.
 Allow updates below €100 without a prompt.
 Ask a person before larger updates, adds and deletes.
 Keep the threshold in one constant.
+Use the starter `03-mcp/hook-demo.mjs` with `npm run hook:demo -- small`; it sends fixture JSON to the real hook.
 
 **Demo (facilitator).** Run a small update. Show its audit line.
 Run a large update. Deny it.
@@ -216,7 +220,6 @@ Add `customer-reply-agent.md` with `name: customer-reply-agent` and only the dra
 Add `fraud-check-agent.md` with `name: fraud-check-agent` and read tools only.
 Wire both agents in `03-mcp/agents.mjs`.
 Let the hook allow and audit draft saves.
-Make `npm run reset:mcp` remove drafts.
 
 **Done when:** a test saves and replaces a draft in a temporary folder.
 It checks the review header.
