@@ -161,7 +161,7 @@ Run one update. Show the JSON copy.
 Then run `npm run reset:mcp`.
 
 **Your turn.** Add the CRUD tools and the copy-on-write store.
-Create `03-mcp/claude-project/.claude/agents/transaction-agent.md`.
+Create `03-mcp/claude-project/.claude/agents/transaction-agent.md` with `name: transaction-agent`.
 Wire the agent for the SDK and Claude Code.
 Keep write tools out of the orchestrator's `allowedTools`.
 
@@ -210,8 +210,8 @@ Show the fraud agent's JSON result.
 **Your turn.** Add `drafts-server.js` and the `save_reply_draft` tool.
 Use `DRAFTS_DIR` and create its folder before saving.
 Add `drafts` to `.mcp.json` and assignment options only.
-Add `customer-reply-agent.md` with only the draft tool.
-Add `fraud-check-agent.md` with only customer and transaction read tools.
+Add `customer-reply-agent.md` with `name: customer-reply-agent` and only the draft tool.
+Add `fraud-check-agent.md` with `name: fraud-check-agent` and read tools only.
 Wire both agents in `03-mcp/agents.mjs`.
 Let the hook allow and audit draft saves.
 Make `npm run reset:mcp` remove drafts.

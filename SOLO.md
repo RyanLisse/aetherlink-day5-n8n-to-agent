@@ -826,7 +826,7 @@ Run one update. Show the JSON copy. Then run `npm run reset:mcp`.
 2. Save changes in a copy under `03-mcp/transaction-mcp/`.
    Create the parent folder before you write the temporary file.
    Add the `npm run reset:mcp` command.
-3. Create `03-mcp/claude-project/.claude/agents/transaction-agent.md`.
+3. Create `03-mcp/claude-project/.claude/agents/transaction-agent.md` with `name: transaction-agent`.
    Give it exactly these tools: `get_transaction`, `update_transaction` and `add_transaction`.
 4. Add `transaction-agent` to the SDK `agents` option and the Claude Code agent files.
    Keep write tools out of the orchestrator's `allowedTools`.
@@ -896,9 +896,9 @@ Show its JSON result.
 5. Add `drafts` to `.mcp.json` and assignment options in `options.mjs`.
 6. Keep `drafts` out of Step 3 options.
 7. Extend `reset.mjs` and `package.json` to remove drafts.
-8. Create `.claude/agents/customer-reply-agent.md`.
+8. Create `.claude/agents/customer-reply-agent.md` with `name: customer-reply-agent`.
 9. Give it only `mcp__drafts__save_reply_draft`.
-10. Create `.claude/agents/fraud-check-agent.md`.
+10. Create `.claude/agents/fraud-check-agent.md` with `name: fraud-check-agent`.
 11. Give it only `get_transaction`, `list_transactions` and `get_customer`.
 12. Make it return the required JSON fields.
 13. Wire both agents in `03-mcp/agents.mjs`.
