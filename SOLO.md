@@ -979,7 +979,7 @@ Edit `resolve.mjs` to run the fixed workflow.
 Edit `resolve-ticket.md` to run it in interactive Claude Code.
 Edit `CLAUDE.md` to state the agent rules.
 Edit `check-assignment.mjs` to check the rules without a model.
-Edit `hook-demo.mjs` to send fixtures to the real hook with Node.
+Use the starter `03-mcp/hook-demo.mjs` to send fixture JSON to the real hook.
 
 **Done when:** the resolve dry run lists every step and branch.
 The SDK test checks a TTY answer and a no-TTY denial.
