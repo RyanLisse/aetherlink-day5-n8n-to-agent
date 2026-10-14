@@ -56,7 +56,6 @@ export function buildResolveOptions({ backend = 'sdk' } = {}) {
     tools: ['Agent', ...questionTool],
     allowedTools: [
       'Agent',
-      ...questionTool,
       'mcp__transactions__get_transaction',
       'mcp__transactions__list_transactions',
       'mcp__customers__get_customer',

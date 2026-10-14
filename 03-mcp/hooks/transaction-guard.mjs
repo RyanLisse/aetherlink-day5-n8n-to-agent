@@ -24,6 +24,23 @@ const deny = (reason = DENIAL_REASON) => ({
     permissionDecisionReason: reason,
   },
 });
+const allow = (reason) => ({
+  hookSpecificOutput: {
+    hookEventName: 'PreToolUse',
+    permissionDecision: 'allow',
+    permissionDecisionReason: reason,
+  },
+});
+
+function approvalReason(input, transaction) {
+  const tool = input.tool_name.replace('mcp__transactions__', '');
+  const transactionId = input.tool_input?.transaction_id;
+  if (!transaction) return `A person must approve ${tool}.`;
+  const amount = Number(transaction.amount);
+  const currency = transaction.currency ?? 'EUR';
+  const amountText = Number.isFinite(amount) ? Number.isInteger(amount) ? String(amount) : amount.toFixed(2) : String(transaction.amount);
+  return `A person must approve ${tool} for ${transactionId}. Amount: ${amountText} ${currency}. Limit: ${AUTO_APPROVE_TRANSACTION_AMOUNT} ${currency}.`;
+}
 
 function invalid(reason) {
   return { action: 'deny', reason: `${reason} ${DENIAL_REASON}` };
@@ -104,8 +121,11 @@ export function createSdkHooks({
       hooks: [async (input) => {
         const decision = await evaluatePreToolUse(input, { lookupTransaction });
         if (decision.action === 'deny') return deny(decision.reason);
-        if (decision.action === 'ask' && !await prompt(input, decision.transaction)) return deny();
-        return {};
+        if (decision.action === 'ask') {
+          if (!await prompt(input, decision.transaction)) return deny();
+          return allow('A person approved the write.');
+        }
+        return allow('The hook allows this tool.');
       }],
     }],
     PostToolUse: [{
@@ -130,11 +150,11 @@ export async function runClaudeCodeHook(eventName, input) {
       hookSpecificOutput: {
         hookEventName: 'PreToolUse',
         permissionDecision: 'ask',
-        permissionDecisionReason: DENIAL_REASON,
+        permissionDecisionReason: approvalReason(input, decision.transaction),
       },
     };
   }
-  return {};
+  return allow('The hook allows this tool.');
 }
 
 if (process.argv[1] && pathToFileURL(path.resolve(process.argv[1])).href === import.meta.url) {

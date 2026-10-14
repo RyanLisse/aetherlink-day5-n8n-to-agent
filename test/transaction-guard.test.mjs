@@ -80,7 +80,8 @@ test('approved write proceeds and a successful write creates one audit line', as
     tool_name: 'mcp__transactions__update_transaction',
     tool_input: { transaction_id: 'TX-1003', status: 'COMPLETED' },
   };
-  assert.deepEqual(await hooks.PreToolUse[0].hooks[0](input), {});
+  const allow = await hooks.PreToolUse[0].hooks[0](input);
+  assert.equal(allow.hookSpecificOutput.permissionDecision, 'allow');
   assert.equal(prompted, true);
 
   const directory = mkdtempSync(path.join(os.tmpdir(), 'transaction-audit-'));
@@ -98,6 +99,30 @@ test('approved write proceeds and a successful write creates one audit line', as
   }
 });
 
+test('approved writes and draft saves return an explicit allow decision', async () => {
+  const hooks = createSdkHooks({
+    lookupTransaction,
+    prompt: async () => true,
+  });
+  const preToolUse = hooks.PreToolUse[0].hooks[0];
+  const approvedWrite = await preToolUse({
+    tool_name: 'mcp__transactions__update_transaction',
+    tool_input: { transaction_id: 'TX-1003', status: 'COMPLETED' },
+  });
+  const autoAllowedWrite = await preToolUse({
+    tool_name: 'mcp__transactions__update_transaction',
+    tool_input: { transaction_id: 'TX-1004', status: 'COMPLETED' },
+  });
+  const draftSave = await preToolUse({
+    tool_name: 'mcp__drafts__save_reply_draft',
+    tool_input: { message_id: 'MSG-07' },
+  });
+
+  assert.equal(approvedWrite.hookSpecificOutput.permissionDecision, 'allow');
+  assert.equal(autoAllowedWrite.hookSpecificOutput.permissionDecision, 'allow');
+  assert.equal(draftSave.hookSpecificOutput.permissionDecision, 'allow');
+});
+
 test('drafts pass without a prompt and PostToolUse audits them', async () => {
   let prompted = false;
   const directory = mkdtempSync(path.join(os.tmpdir(), 'draft-audit-'));
@@ -111,7 +136,8 @@ test('drafts pass without a prompt and PostToolUse audits them', async () => {
     tool_input: { message_id: 'MSG-03', subject: 'Update', body: 'The draft is ready.' },
   };
   try {
-    assert.deepEqual(await hooks.PreToolUse[0].hooks[0](input), {});
+    const allow = await hooks.PreToolUse[0].hooks[0](input);
+    assert.equal(allow.hookSpecificOutput.permissionDecision, 'allow');
     assert.equal(prompted, false);
     await hooks.PostToolUse[0].hooks[0]({
       ...input,
@@ -134,7 +160,7 @@ test('Claude Code hook consumes stdin and returns ask for a human-gated write', 
   assert.deepEqual(result.hookSpecificOutput, {
     hookEventName: 'PreToolUse',
     permissionDecision: 'ask',
-    permissionDecisionReason: DENIAL_REASON,
+    permissionDecisionReason: 'A person must approve update_transaction for TX-1003. Amount: 780 EUR. Limit: 100 EUR.',
   });
   const directory = mkdtempSync(path.join(os.tmpdir(), 'transaction-hook-'));
   try {

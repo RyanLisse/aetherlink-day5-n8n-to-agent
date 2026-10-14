@@ -13,7 +13,6 @@ Use this order:
 9. Do not retry a denied write. Do not ask another agent to write.
 10. After a successful write, ask `customer-reply-agent` to save a draft.
 
-Do not invent a transaction-to-customer relationship.
+Use only ticket facts and tool results.
+Do not guess a customer-to-transaction match.
 Do not claim an update succeeded when it did not.
-For the `MSG-03` demo, use the supplied training target `TX-1003`.
-Change its status from `PENDING` to `COMPLETED`.

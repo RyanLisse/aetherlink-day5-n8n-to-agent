@@ -211,7 +211,7 @@ The file starts with a review header.
 It returns fraud risk, signals and a hold decision.
 Stop before a write when it returns high risk or hold.
 
-**Demo (facilitator).** Save a draft for `MSG-03`.
+**Demo (facilitator).** Save a draft for `MSG-07`.
 Show the file header and path.
 Show the fraud agent's JSON result.
 
@@ -235,13 +235,25 @@ Ask one question when risk is medium or a fact is missing.
 Use `claude --allowedTools AskUserQuestion` for the interactive route.
 The `claude -p` route excludes this tool and reports `ESCALATE`.
 
-**Demo (facilitator).** Run `npm run resolve -- MSG-03 --backend sdk`.
-Use supplied target `TX-1003`. Change `PENDING` to `COMPLETED`.
-Approve one run. Deny one run.
-Do not retry or delegate a denied write.
+**Demo (facilitator).** Run `npm run resolve -- MSG-07 --backend sdk` in a TTY.
+MSG-07 links CUST-007 to TX-1007, Vertex Commerce.
+The amount is €899. The status is FAILED.
+The note says "amount appears reserved."
+Approve one run with `y`. Deny another run with `N`.
+Check that a denial stops without a retry, another agent, or a draft.
+Run MSG-08. TX-1014 has `Fraud Flag Yes`.
+Check that the workflow reports `ESCALATE` and makes no write.
+Run MSG-09. CUST-004 does not match TX-1018, which belongs to Juniper Hotels.
+Choose Escalate in the question. Check that the workflow makes no write.
+Run MSG-09 without a TTY. Check that the workflow reports `ESCALATE`.
+Run `npm run hook:demo -- small`.
+Use `large`, `add`, `delete`, or `read` for another case.
+The small fixture uses TX-1002 (€49.99). The large fixture uses TX-1007 (€899).
+No ticket fits a small update. Do not invent one.
 
 **Your turn.** Add `ask-human.mjs` for the SDK `canUseTool` callback.
 Give `AskUserQuestion` to the orchestrator only.
+Keep it in SDK `tools`, not in SDK `allowedTools`.
 Add the fraud and question rules to `CLAUDE.md`.
 Add `npm run resolve -- MSG-0N [--backend sdk|claude-code] [--dry-run]`.
 Add `.claude/commands/resolve-ticket.md` with the same workflow.

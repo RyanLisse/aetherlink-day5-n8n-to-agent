@@ -19,6 +19,7 @@
     "reset:mcp": "node 03-mcp/transaction-mcp/reset.mjs",
     "hook:demo": "node 03-mcp/hook-demo.mjs",
     "resolve": "node 03-mcp/resolve.mjs",
+    "hook:demo": "node 03-mcp/hook-demo.mjs",
     "check:assignment": "node scripts/check-assignment.mjs",
     "check": "node check.mjs",
     "test": "node --test \"test/*.test.mjs\"",

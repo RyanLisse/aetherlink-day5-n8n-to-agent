@@ -66,14 +66,14 @@ Use these steps:
 1. Ask customer-context-agent to look up the customer when the ticket has a customer ID.
 2. Look up the transaction with get_transaction. Use list_transactions when you need to find a match.
 3. Ask fraud-check-agent to check the facts before any write.
-4. Stop with ESCALATE when hold is true or fraud_risk is high. Do not write.
-5. Ask one question when fraud_risk is medium or a fact is missing.
-6. Give the person two to four clear options. Continue only after the person selects Continue.
-7. Stop with ESCALATE after any other answer.
-8. Stop with ESCALATE when AskUserQuestion is not available.
-9. Ask transaction-agent to look up the transaction and propose one status update.
-10. For MSG-03, use TX-1003 as the training target. Change PENDING to COMPLETED.
-11. Do not claim TX-1003 belongs to the customer in MSG-03.
+4. Use only facts from the ticket and tool results. Do not guess a customer-to-transaction match.
+5. Treat only required facts as missing. Do not stop for an optional customer field.
+6. Stop with ESCALATE when hold is true or fraud_risk is high. Do not write.
+7. Ask one question when fraud_risk is medium or a required fact is missing.
+8. Give the person clear options. Continue only after the person selects Continue.
+9. Stop with ESCALATE after any other answer.
+10. Stop with ESCALATE when AskUserQuestion is not available.
+11. Ask transaction-agent to look up the transaction and propose one status update.
 12. Let the PreToolUse hook check the write. Stop if it denies the write.
 13. Do not retry the write. Do not ask another agent to write.
 14. After a successful write, ask customer-reply-agent to save a draft with save_reply_draft.
@@ -86,7 +86,7 @@ const result = await runQuery({
   prompt,
   options,
   dryRun,
-  dryRunNote: 'Look up the customer and the transaction. Run fraud-check-agent before a write. Stop with ESCALATE when hold is true or risk is high. Ask one question when risk is medium or a fact is missing. Continue after approval. Stop with ESCALATE after denial. Propose one update. Let the hook check the write. Save a draft with customer-reply-agent.',
+  dryRunNote: 'Look up the customer and the transaction. Run fraud-check-agent before a write. Stop with ESCALATE when hold is true or risk is high. Ask one question when risk is medium or a fact is missing. Continue only after the person selects Continue. Stop with ESCALATE after any other answer or a denied write. Propose one update. Let the hook check the write. Save a draft with customer-reply-agent.',
   backendArgument: backend,
 });
 
