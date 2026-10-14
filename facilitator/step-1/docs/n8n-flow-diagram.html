@@ -1,0 +1,169 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Support Triage Flow</title>
+<style>
+:root {
+  color-scheme: light dark;
+  --bg: #f6f5f1;
+  --fg: #1f2329;
+  --muted: #5f6670;
+  --line: #c9c6bd;
+  --panel: #fff;
+  --ai: #6b7280;
+  --accent: #0f766e;
+  --accent-soft: #d8efec;
+  --display: "IBM Plex Sans", "Helvetica Neue", Arial, sans-serif;
+  --mono: "IBM Plex Mono", "SFMono-Regular", Menlo, Consolas, monospace;
+}
+@media (prefers-color-scheme: dark) {
+  :root { --bg: #15181c; --fg: #e7e6e1; --muted: #a2a7ae; --line: #3a3f46; --panel: #1d2126; --ai: #9aa0a8; --accent: #2dd4bf; --accent-soft: #123b37; }
+}
+* { box-sizing: border-box; }
+body { margin: 0; background: var(--bg); color: var(--fg); font: 15px/1.5 var(--display); }
+.wrap { max-width: 1240px; margin: auto; padding: 32px 16px 48px; }
+header { display: flex; align-items: baseline; gap: 16px; margin-bottom: 18px; flex-wrap: wrap; }
+h1 { margin: 0; font-size: 26px; line-height: 1.2; }
+.eyebrow, code, pre { font-family: var(--mono); }
+.eyebrow { color: var(--muted); font-size: 12px; letter-spacing: .06em; text-transform: uppercase; }
+figure, .panel { margin: 0; padding: 16px; border: 1px solid var(--line); border-radius: 6px; background: var(--panel); }
+figure { overflow-x: auto; }
+svg { display: block; width: 100%; min-width: 920px; height: auto; }
+figcaption, .muted { color: var(--muted); }
+figcaption { margin-top: 12px; font-size: 13px; }
+.legend { display: flex; flex-wrap: wrap; gap: 8px 22px; margin-top: 10px; color: var(--muted); font-size: 13px; }
+.legend span { display: inline-flex; align-items: center; gap: 8px; }
+.legend i { width: 28px; border-top: 2px solid var(--fg); }
+.legend i.ai { border-color: var(--ai); border-top-style: dashed; }
+.legend b { width: 14px; height: 14px; border: 1.5px solid var(--accent); border-radius: 3px; background: var(--accent-soft); }
+.panels { display: grid; grid-template-columns: repeat(auto-fit, minmax(280px, 1fr)); gap: 14px; margin-top: 16px; }
+h2 { margin: 0 0 10px; font-size: 16px; }
+table { width: 100%; border-collapse: collapse; font-size: 14px; }
+th, td { padding: 6px 8px; border-bottom: 1px solid var(--line); text-align: left; vertical-align: top; }
+th { color: var(--muted); font-size: 12px; font-weight: 500; letter-spacing: .04em; text-transform: uppercase; }
+code { padding: 1px 4px; border-radius: 3px; background: var(--accent-soft); font-size: 12px; }
+pre { margin: 8px 0 0; padding: 10px; overflow-x: auto; border: 1px solid var(--line); border-radius: 4px; background: var(--bg); font-size: 12px; }
+.node { fill: var(--panel); stroke: var(--fg); stroke-width: 1.4; }
+.hub { fill: var(--accent-soft); stroke: var(--accent); stroke-width: 2; }
+.tool { stroke: var(--accent); }
+.data { stroke: var(--ai); }
+.edge { fill: none; stroke: var(--fg); stroke-width: 1.8; marker-end: url(#arrow); }
+.ai-edge { fill: none; stroke: var(--ai); stroke-width: 1.6; stroke-dasharray: 5 4; marker-end: url(#arrow-ai); }
+.label { fill: var(--fg); text-anchor: middle; font-size: 13px; font-weight: 600; }
+.type { fill: var(--muted); text-anchor: middle; font: 11px var(--mono); }
+.edge-label { fill: var(--muted); font: 11px var(--mono); }
+</style>
+</head>
+<body>
+<main class="wrap">
+<header>
+  <h1>Support Triage Flow</h1>
+  <span class="eyebrow">n8n/support-triage.json · final Workshop 3 flow</span>
+</header>
+<figure>
+<svg viewBox="0 0 1280 680" role="img" aria-label="Chat and manual triggers feed an AI Agent with a chat model, memory and structured priority parser. The agent uses Customer Reply, Risk and Customer Context agents, with a Data Table tool for customer lookup. A Switch routes low, medium and high priority to their corresponding action nodes.">
+  <defs>
+    <marker id="arrow" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto"><path d="M0 0L10 5L0 10z" fill="currentColor"/></marker>
+    <marker id="arrow-ai" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto"><path d="M0 0L10 5L0 10z" fill="var(--ai)"/></marker>
+  </defs>
+  <text x="24" y="28" class="edge-label">ENTRY POINTS · message data</text>
+  <text x="430" y="28" class="edge-label">COORDINATOR · structured result</text>
+  <text x="360" y="375" class="edge-label">SPECIALIST AGENTS AND CUSTOMER LOOKUP</text>
+
+  <path class="edge" d="M180 100H300V205H430"/>
+  <path class="edge" d="M180 230H220"/>
+  <path class="edge" d="M390 230H430"/>
+  <path class="edge" d="M610 205H700"/>
+  <path class="edge" d="M860 205H940V100H1000"/>
+  <path class="edge" d="M940 205V205H1000"/>
+  <path class="edge" d="M940 205V310H1000"/>
+
+  <path class="ai-edge" d="M490 335V280"/>
+  <path class="ai-edge" d="M610 335V280"/>
+  <path class="ai-edge" d="M730 335V280"/>
+  <path class="ai-edge" d="M450 500V450"/>
+  <path class="ai-edge" d="M620 500V450"/>
+  <path class="ai-edge" d="M790 500V450"/>
+  <path class="ai-edge" d="M1010 500V450H880"/>
+  <text x="485" y="320" class="edge-label">model</text>
+  <text x="605" y="320" class="edge-label">memory</text>
+  <text x="735" y="320" class="edge-label">parser</text>
+  <text x="1008" y="484" class="edge-label">data table tool</text>
+
+  <rect class="node" x="20" y="75" width="160" height="50" rx="6"/>
+  <text class="label" x="100" y="96">When chat message</text><text class="type" x="100" y="114">chatTrigger</text>
+  <rect class="node" x="20" y="205" width="160" height="50" rx="6"/>
+  <text class="label" x="100" y="226">Execute workflow</text><text class="type" x="100" y="244">manualTrigger</text>
+  <rect class="node" x="220" y="205" width="170" height="50" rx="6"/>
+  <text class="label" x="305" y="226">Ticket Input</text><text class="type" x="305" y="244">Set · sample customer message</text>
+  <rect class="hub" x="430" y="180" width="180" height="55" rx="6"/>
+  <text class="label" x="520" y="203">AI Agent</text><text class="type" x="520" y="222">coordinator</text>
+  <rect class="node" x="700" y="180" width="160" height="50" rx="6"/>
+  <text class="label" x="780" y="201">Switch</text><text class="type" x="780" y="219">priority</text>
+  <rect class="node" x="1000" y="75" width="220" height="50" rx="6"/>
+  <text class="label" x="1110" y="96">Low Priority Action</text><text class="type" x="1110" y="114">AUTO_REPLY · Self-service support</text>
+  <rect class="node" x="1000" y="180" width="220" height="50" rx="6"/>
+  <text class="label" x="1110" y="201">Medium Priority Action</text><text class="type" x="1110" y="219">INVESTIGATE · Support team</text>
+  <rect class="node" x="1000" y="285" width="220" height="50" rx="6"/>
+  <text class="label" x="1110" y="306">High Priority Action</text><text class="type" x="1110" y="324">ESCALATE · Payments escalation team</text>
+
+  <rect class="node data" x="420" y="335" width="140" height="48" rx="6"/>
+  <text class="label" x="490" y="355">OpenAI Chat Model</text><text class="type" x="490" y="373">gpt-5-mini</text>
+  <rect class="node data" x="570" y="335" width="140" height="48" rx="6"/>
+  <text class="label" x="640" y="355">Simple Memory</text><text class="type" x="640" y="373">session memory</text>
+  <rect class="node data" x="720" y="335" width="140" height="48" rx="6"/>
+  <text class="label" x="790" y="355">Priority Parser</text><text class="type" x="790" y="373">Structured Output Parser</text>
+
+  <rect class="node tool" x="360" y="405" width="180" height="48" rx="6"/>
+  <text class="label" x="450" y="425">Customer Reply Agent</text><text class="type" x="450" y="443">customer-facing draft</text>
+  <rect class="node tool" x="530" y="405" width="180" height="48" rx="6"/>
+  <text class="label" x="620" y="425">Risk Agent</text><text class="type" x="620" y="443">priority and risk note</text>
+  <rect class="node tool" x="700" y="405" width="180" height="48" rx="6"/>
+  <text class="label" x="790" y="425">Customer Context Agent</text><text class="type" x="790" y="443">customer facts</text>
+  <rect class="node data" x="920" y="405" width="180" height="48" rx="6"/>
+  <text class="label" x="1010" y="425">Get row(s) in Data table</text><text class="type" x="1010" y="443">customer_context</text>
+
+  <rect class="node data" x="360" y="500" width="180" height="48" rx="6"/>
+  <text class="label" x="450" y="520">Reply Agent Model</text><text class="type" x="450" y="538">gpt-5-mini</text>
+  <rect class="node data" x="530" y="500" width="180" height="48" rx="6"/>
+  <text class="label" x="620" y="520">Risk Agent Model</text><text class="type" x="620" y="538">gpt-5-mini</text>
+  <rect class="node data" x="700" y="500" width="180" height="48" rx="6"/>
+  <text class="label" x="790" y="520">Customer Context Model</text><text class="type" x="790" y="538">gpt-5-mini</text>
+  <text x="24" y="640" class="edge-label">Solid lines carry messages and results · dashed lines connect AI capabilities</text>
+</svg>
+<figcaption>The chat and manual entry paths share one coordinator. It uses specialist agents and a customer lookup tool, returns a structured priority, then routes through the Switch to the matching action.</figcaption>
+<div class="legend"><span><i></i> message and result</span><span><i class="ai"></i> AI model, memory, parser or tool</span><span><b></b> coordinator</span></div>
+</figure>
+<div class="panels">
+  <section class="panel">
+    <h2>Where each node lands in the SDK</h2>
+    <table>
+      <thead><tr><th>n8n</th><th>Workshop code</th></tr></thead>
+      <tbody>
+        <tr><td>Chat Trigger / Ticket Input</td><td><code>npm run chat</code> / <code>docs/customer-messages.md</code></td></tr>
+        <tr><td>AI Agent · Priority Parser</td><td><code>query()</code> + <code>outputFormat: json_schema</code></td></tr>
+        <tr><td>Customer Reply / Risk / Customer Context Agents</td><td><code>options.agents</code> + the <code>Agent</code> tool</td></tr>
+        <tr><td>Get row(s) in Data table</td><td>Customers MCP server reading <code>docs/customer_context.csv</code></td></tr>
+        <tr><td>Simple Memory</td><td><code>npm run chat</code> resumes with <code>sessionId</code></td></tr>
+        <tr><td>Switch + three Set nodes</td><td><code>lib/switch.mjs</code> maps priority to action and team</td></tr>
+      </tbody>
+    </table>
+  </section>
+  <section class="panel">
+    <h2>Switch routes</h2>
+    <p>The workflow compares the structured priority and selects one action:</p>
+    <pre>low     → AUTO_REPLY  · Self-service support
+medium  → INVESTIGATE · Support team
+high    → ESCALATE    · Payments escalation team</pre>
+  </section>
+  <section class="panel">
+    <h2>Workshop boundary</h2>
+    <p>The n8n export shows the final W3 workflow. The code workshop rebuilds its customer context lookup as a read-only stdio MCP server; transaction lookup and approval are introduced in Step 3.</p>
+    <p class="muted">No model credentials are included in the export.</p>
+  </section>
+</div>
+</main>
+</body>
+</html>

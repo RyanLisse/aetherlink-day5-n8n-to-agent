@@ -1,0 +1,584 @@
+diff --git a/01-single-agent/claude-project/CLAUDE.md b/01-single-agent/claude-project/CLAUDE.md
+index be4a70b..9b40935 100644
+--- a/01-single-agent/claude-project/CLAUDE.md
++++ b/01-single-agent/claude-project/CLAUDE.md
+@@ -1,16 +1,21 @@
+ # Customer Support Triage
+ 
+-<!-- STEP 1: this file is the agent's system message (n8n: AI Agent → System Message).
+-     Replace each TODO with the text from FACILITATOR.md / SOLO.md, Step 1. -->
+-
+ ## Purpose
+-TODO (Step 1): who the agent is and what it does with each customer message.
++You are a customer-support assistant for a payment company. Read each incoming customer message and assign a priority.
+ 
+ ## Rules
+-TODO (Step 1): only use supplied information, no web search, no invented facts, say what is missing.
++- Use only information supplied by the user or available inside this project.
++- Do not search the web for customer or transaction information.
++- Do not invent facts.
++- If important information is missing, say what is missing.
++- Keep your explanation concise.
+ 
+ ## Priority definitions
+-TODO (Step 1): what LOW, MEDIUM and HIGH mean. Judge impact, not tone.
++- **LOW** — General questions, requests for information, cosmetic issues, or situations with little/no immediate customer or financial impact.
++- **MEDIUM** — A real service or payment problem affecting one customer, but with no clear sign of fraud, security risk, major financial exposure, or widespread impact.
++- **HIGH** — Suspected fraud or security risk, unknown/unauthorised transactions, multiple affected transactions, substantial or time-critical financial impact, or evidence that many customers may be affected.
++- Judge impact and risk, not tone: angry wording alone never raises the priority, and calm wording never lowers it.
+ 
+ ## Required output
+-TODO (Step 1): `Priority: LOW | MEDIUM | HIGH` and `Reason:`.
++Return the priority (`low`, `medium` or `high`) and a reason of one or two sentences.
++The SDK turns this into JSON (the Priority Parser).
+diff --git a/01-single-agent/options.mjs b/01-single-agent/options.mjs
+index db8d56d..b847125 100644
+--- a/01-single-agent/options.mjs
++++ b/01-single-agent/options.mjs
+@@ -1,19 +1,17 @@
+ import path from 'node:path';
+ import { fileURLToPath } from 'node:url';
++import { prioritySchema } from './priority-schema.mjs';
+ 
+ const lessonDirectory = path.dirname(fileURLToPath(import.meta.url));
+ 
+-// n8n: the settings panel of the AI Agent node. SDK: the options object passed to query().
+ export function buildOptions() {
+   return {
+-    // STEP 1: cwd → path.join(lessonDirectory, 'claude-project') so the agent works inside its own project folder.
+-    // STEP 1: settingSources → ['project'] so query() loads claude-project/CLAUDE.md (the n8n "System Message").
+-    // STEP 1: systemPrompt → { type: 'preset', preset: 'claude_code' } (CLAUDE.md is added on top of the preset).
+-    // STEP 1: tools → [] and disallowedTools → ['WebSearch', 'WebFetch', 'Bash']: this agent only reads and answers.
+-    // STEP 1: maxTurns → 3 (n8n: "Max Iterations").
+-    // STEP 1: outputFormat → { type: 'json_schema', schema: prioritySchema } (Priority Parser).
++    cwd: path.join(lessonDirectory, 'claude-project'),
++    settingSources: ['project'],
++    systemPrompt: { type: 'preset', preset: 'claude_code' },
++    tools: [],
++    disallowedTools: ['WebSearch', 'WebFetch', 'Bash'],
++    maxTurns: 3,
++    outputFormat: { type: 'json_schema', schema: prioritySchema },
+   };
+ }
+-
+-// Keeps the import used until Step 1 fills in cwd.
+-export const projectDirectory = path.join(lessonDirectory, 'claude-project');
+diff --git a/01-single-agent/priority-schema.mjs b/01-single-agent/priority-schema.mjs
+new file mode 100644
+index 0000000..edb0bb3
+--- /dev/null
++++ b/01-single-agent/priority-schema.mjs
+@@ -0,0 +1,9 @@
++export const prioritySchema = {
++  type: 'object',
++  properties: {
++    priority: { type: 'string', enum: ['low', 'medium', 'high'] },
++    reason: { type: 'string' },
++  },
++  required: ['priority', 'reason'],
++  additionalProperties: false,
++};
+diff --git a/README.md b/README.md
+index 5fb6b13..463a354 100644
+--- a/README.md
++++ b/README.md
+@@ -74,7 +74,7 @@ See what a step adds: `git diff origin/main origin/step-1`,
+ | Command | What it does | Needs a key? |
+ | --- | --- | --- |
+ | `npm run verify` | Tests plus offline dry runs (and the MCP smoke test from Step 3) | no |
+-| `npm run chat [-- --lesson 1|2|3]` | Interactive chat; `--no-memory` starts a fresh session per turn | yes |
++| `npm run chat [-- --lesson 1|2|3] [--structured]` | Interactive chat; free-form by default, `--structured` keeps the lesson schema, `--no-memory` starts a fresh session per turn | yes |
+ | `npm run chat -- --dry-run` | Print the default chat options without calling a model | no |
+ | `npm run lesson1 -- MSG-01 [--dry-run]` | Step 1: one agent | yes, unless `--dry-run` |
+ | `npm run lesson2 -- MSG-05 [--dry-run]` | Step 2: orchestrator + subagents | yes, unless `--dry-run` |
+diff --git a/SOLO.md b/SOLO.md
+index 9213fa7..1e8ada7 100644
+--- a/SOLO.md
++++ b/SOLO.md
+@@ -216,6 +216,7 @@ you> exit
+ 
+ The default chat resumes the previous `sessionId`; `--no-memory` starts a new query each turn.
+ Every `npm run lesson1` is a fresh session on purpose (one ticket = one case).
++Free-form chat is the default; use `npm run chat -- --lesson 1 --structured` to keep the lesson schema.
+ 
+ **Run:**
+ 
+diff --git a/docs/SETUP.md b/docs/SETUP.md
+index 5d2ed56..34bbd6c 100644
+--- a/docs/SETUP.md
++++ b/docs/SETUP.md
+@@ -79,6 +79,7 @@ npm run verify
+ ```
+ 
+ The default backend is `claude-code`. It uses the Claude Code login on this machine. Use `--backend sdk` only when you want to use an API key.
++The Claude Code subprocess does not inherit `ANTHROPIC_API_KEY`; that key is for the `sdk` backend.
+ 
+ ## Docker
+ 
+@@ -96,7 +97,7 @@ To run a lesson with Claude Code, create a token on the host with `claude setup-
+ docker run --rm -it -e CLAUDE_CODE_OAUTH_TOKEN w4 npm run lesson1 -- MSG-01
+ ```
+ 
+-You can also pass `ANTHROPIC_API_KEY` and select `--backend sdk`. The `sdk-login` backend is for your own local learning only. Anthropic's SDK documentation says third-party products may not offer claude.ai login for SDK agents without approval.
++Inside Docker, `ANTHROPIC_API_KEY` is for `--backend sdk`; `claude-code` uses `CLAUDE_CODE_OAUTH_TOKEN`. The `sdk-login` backend is for your own local learning only. Anthropic's SDK documentation says third-party products may not offer claude.ai login for SDK agents without approval.
+ 
+ Do not mount `~/.claude` as the container login method. On macOS, Claude Code stores login credentials in the Keychain.
+ 
+diff --git a/lib/backend.mjs b/lib/backend.mjs
+index 2780bb2..4325494 100644
+--- a/lib/backend.mjs
++++ b/lib/backend.mjs
+@@ -122,11 +122,30 @@ export function formatCommand(command, args) {
+   }).join(' ');
+ }
+ 
+-export async function runClaudeCode({ command, prompt, options, onEvent }) {
++export function failedResultMessage(event) {
++  if (event.type !== 'result' || !(event.is_error === true || event.subtype?.startsWith('error'))) {
++    return null;
++  }
++
++  const details = event.errors ?? event.error ?? event.message;
++  const diagnostic = Array.isArray(details) ? details.join('; ') : details;
++  return `Agent run failed (${event.subtype ?? 'result error'}): ${diagnostic || 'No error details provided.'}`;
++}
++
++export function assertSuccessfulResult(event) {
++  const message = failedResultMessage(event);
++  if (message) {
++    throw new Error(message);
++  }
++}
++
++export async function runClaudeCode({ command, prompt, options, onEvent, spawnImpl = spawn }) {
+   const args = toClaudeArgs(prompt, options);
+-  const child = spawn(command, args, {
++  const env = { ...process.env };
++  delete env.ANTHROPIC_API_KEY;
++  const child = spawnImpl(command, args, {
+     cwd: options.cwd,
+-    env: process.env,
++    env,
+     shell: false,
+     stdio: ['ignore', 'pipe', 'pipe'],
+   });
+@@ -152,6 +171,7 @@ export async function runClaudeCode({ command, prompt, options, onEvent }) {
+     const event = JSON.parse(line);
+     sessionId = event.session_id ?? event.sessionId ?? sessionId;
+     onEvent(event);
++    assertSuccessfulResult(event);
+     if (event.type === 'result') {
+       result = event.structured_output ?? event.result ?? null;
+     }
+diff --git a/lib/chat-loop.mjs b/lib/chat-loop.mjs
+new file mode 100644
+index 0000000..1d86468
+--- /dev/null
++++ b/lib/chat-loop.mjs
+@@ -0,0 +1,33 @@
++import { createInterface } from 'node:readline';
++
++export async function runChatLoop({ input, output, options, noMemory, backendArgument, runQuery }) {
++  const readline = createInterface({ input, output });
++  let sessionId;
++
++  try {
++    output.write('you> ');
++    for await (const line of readline) {
++      const prompt = line.trim();
++
++      if (!prompt || prompt.toLowerCase() === 'exit') {
++        break;
++      }
++
++      const turnOptions = {
++        ...options,
++        ...(!noMemory && sessionId ? { resume: sessionId } : {}),
++      };
++      const turn = await runQuery({ prompt, options: turnOptions, dryRun: false, backendArgument });
++
++      if (!noMemory) {
++        sessionId = turn.sessionId;
++      }
++
++      if (!input.readableEnded) {
++        output.write('you> ');
++      }
++    }
++  } finally {
++    readline.close();
++  }
++}
+diff --git a/lib/chat-options.mjs b/lib/chat-options.mjs
+new file mode 100644
+index 0000000..3a68a6e
+--- /dev/null
++++ b/lib/chat-options.mjs
+@@ -0,0 +1,46 @@
++const usage = 'Usage: npm run chat -- [--lesson 1|2|3] [--backend claude-code|sdk|sdk-login] [--no-memory] [--structured] [--dry-run]';
++
++export function parseArgs(args) {
++  let lesson = '1';
++  let noMemory = false;
++  let dryRun = false;
++  let structured = false;
++  let backendArgument;
++
++  for (let index = 0; index < args.length; index += 1) {
++    if (args[index] === '--lesson') {
++      lesson = args[index + 1];
++      index += 1;
++    } else if (args[index] === '--no-memory') {
++      noMemory = true;
++    } else if (args[index] === '--structured') {
++      structured = true;
++    } else if (args[index] === '--dry-run') {
++      dryRun = true;
++    } else if (args[index] === '--backend') {
++      backendArgument = args[index + 1];
++      index += 1;
++    } else if (args[index].startsWith('--backend=')) {
++      backendArgument = args[index].slice('--backend='.length);
++    } else {
++      throw new Error(usage);
++    }
++  }
++
++  if (!['1', '2', '3'].includes(lesson)) {
++    throw new Error(usage);
++  }
++
++  return { lesson, noMemory, dryRun, structured, backendArgument };
++}
++
++export function selectChatOptions(options, { lesson, structured }) {
++  const chatOptions = { ...options };
++  if (structured && !chatOptions.outputFormat) {
++    throw new Error(`Lesson ${lesson} has no structured output format; --structured requires outputFormat.`);
++  }
++  if (!structured) {
++    delete chatOptions.outputFormat;
++  }
++  return chatOptions;
++}
+diff --git a/lib/chat.mjs b/lib/chat.mjs
+index 70517f1..36dddd9 100644
+--- a/lib/chat.mjs
++++ b/lib/chat.mjs
+@@ -1,44 +1,13 @@
+-import { createInterface } from 'node:readline/promises';
+ import { stdin, stdout } from 'node:process';
+ import { fileURLToPath, pathToFileURL } from 'node:url';
+ import { existsSync } from 'node:fs';
+ import path from 'node:path';
+ import { runQuery } from './run.mjs';
++import { runChatLoop } from './chat-loop.mjs';
+ import { backendLabel, formatCommand, selectBackend, toClaudeArgs } from './backend.mjs';
++import { parseArgs, selectChatOptions } from './chat-options.mjs';
+ 
+ const packageDirectory = path.resolve(path.dirname(fileURLToPath(import.meta.url)), '..');
+-const usage = 'Usage: npm run chat -- [--lesson 1|2|3] [--backend claude-code|sdk|sdk-login] [--no-memory] [--dry-run]';
+-
+-function parseArgs(args) {
+-  let lesson = '1';
+-  let noMemory = false;
+-  let dryRun = false;
+-  let backendArgument;
+-
+-  for (let index = 0; index < args.length; index += 1) {
+-    if (args[index] === '--lesson') {
+-      lesson = args[index + 1];
+-      index += 1;
+-    } else if (args[index] === '--no-memory') {
+-      noMemory = true;
+-    } else if (args[index] === '--dry-run') {
+-      dryRun = true;
+-    } else if (args[index] === '--backend') {
+-      backendArgument = args[index + 1];
+-      index += 1;
+-    } else if (args[index].startsWith('--backend=')) {
+-      backendArgument = args[index].slice('--backend='.length);
+-    } else {
+-      throw new Error(usage);
+-    }
+-  }
+-
+-  if (!['1', '2', '3'].includes(lesson)) {
+-    throw new Error(usage);
+-  }
+-
+-  return { lesson, noMemory, dryRun, backendArgument };
+-}
+ 
+ async function loadOptions(lesson) {
+   const lessonDirectory = ['01-single-agent', '02-subagents', '03-mcp'][Number(lesson) - 1];
+@@ -49,13 +18,11 @@ async function loadOptions(lesson) {
+   }
+ 
+   const { buildOptions } = await import(pathToFileURL(optionsPath).href);
+-  const options = { ...buildOptions() };
+-  delete options.outputFormat;
+-  return options;
++  return { ...buildOptions() };
+ }
+ 
+-const { lesson, noMemory, dryRun, backendArgument } = parseArgs(process.argv.slice(2));
+-const options = await loadOptions(lesson);
++const { lesson, noMemory, dryRun, backendArgument, structured } = parseArgs(process.argv.slice(2));
++const options = selectChatOptions(await loadOptions(lesson), { lesson, structured });
+ const backend = selectBackend({ argument: backendArgument });
+ 
+ if (dryRun) {
+@@ -65,29 +32,12 @@ if (dryRun) {
+   console.log(`Claude Code equivalent: ${formatCommand('claude', toClaudeArgs('<chat input>', options))}`);
+   console.log('dry run — no model call, not model evidence');
+ } else {
+-  const readline = createInterface({ input: stdin, output: stdout });
+-  let sessionId;
+-
+-  try {
+-    while (true) {
+-      const input = await readline.question('you> ');
+-      const prompt = input.trim();
+-
+-      if (!prompt || prompt.toLowerCase() === 'exit') {
+-        break;
+-      }
+-
+-      const turnOptions = {
+-        ...options,
+-        ...(!noMemory && sessionId ? { resume: sessionId } : {}),
+-      };
+-      const turn = await runQuery({ prompt, options: turnOptions, dryRun: false, backendArgument: backend });
+-
+-      if (!noMemory) {
+-        sessionId = turn.sessionId;
+-      }
+-    }
+-  } finally {
+-    readline.close();
+-  }
++  await runChatLoop({
++    input: stdin,
++    output: stdout,
++    options,
++    noMemory,
++    backendArgument: backend,
++    runQuery,
++  });
+ }
+diff --git a/lib/run.mjs b/lib/run.mjs
+index 0ae598c..820bf5d 100644
+--- a/lib/run.mjs
++++ b/lib/run.mjs
+@@ -5,6 +5,8 @@ import { parseMessages } from './messages.mjs';
+ import { route } from './switch.mjs';
+ import {
+   backendLabel,
++  assertSuccessfulResult,
++  failedResultMessage,
+   findClaudeBinary,
+   formatCommand,
+   runClaudeCode,
+@@ -108,6 +110,10 @@ export function printEvent(event) {
+   }
+ 
+   if (event.type === 'result') {
++    const failure = failedResultMessage(event);
++    if (failure) {
++      console.error(failure);
++    }
+     const duration = event.duration_ms === undefined ? '' : ` · ${event.duration_ms} ms`;
+     const cost = event.total_cost_usd === undefined ? '' : ` · $${event.total_cost_usd}`;
+     console.log(`[result] ${event.subtype ?? 'completed'} · ${event.num_turns ?? 0} turns${duration}${cost}`);
+@@ -164,6 +170,7 @@ export async function runWithBackend({ prompt, options, dryRun, dryRunNote, back
+     for await (const event of query({ prompt, options })) {
+       sessionId = event.session_id ?? sessionId;
+       printEvent(event);
++      assertSuccessfulResult(event);
+ 
+       if (event.type === 'result') {
+         result = event.structured_output ?? event.result;
+diff --git a/test/backend.test.mjs b/test/backend.test.mjs
+index 0df8938..629d435 100644
+--- a/test/backend.test.mjs
++++ b/test/backend.test.mjs
+@@ -1,7 +1,17 @@
+ import assert from 'node:assert/strict';
++import { EventEmitter } from 'node:events';
++import { PassThrough } from 'node:stream';
+ import { test } from 'node:test';
+-import { backendLabel, selectBackend, toClaudeArgs } from '../lib/backend.mjs';
++import {
++  assertSuccessfulResult,
++  backendLabel,
++  failedResultMessage,
++  runClaudeCode,
++  selectBackend,
++  toClaudeArgs,
++} from '../lib/backend.mjs';
+ import { formatDoctor, getDoctorReport } from '../lib/doctor.mjs';
++import { printEvent } from '../lib/run.mjs';
+ 
+ test('backend selection follows argument, environment, key, then Claude Code defaults', () => {
+   assert.equal(selectBackend({ argument: 'sdk-login', env: { AGENT_BACKEND: 'sdk' } }), 'sdk-login');
+@@ -55,6 +65,49 @@ test('toClaudeArgs maps lesson options to Claude Code flags', () => {
+   assert.ok(args.includes('--resume') && args.includes('session-123'));
+ });
+ 
++test('failed result events print diagnostics and throw', async () => {
++  const event = { type: 'result', subtype: 'error_api', is_error: true, errors: ['request rejected'] };
++  const child = new EventEmitter();
++  child.stdout = new PassThrough();
++  child.stderr = new PassThrough();
++  const originalApiKey = process.env.ANTHROPIC_API_KEY;
++  process.env.ANTHROPIC_API_KEY = 'test-key';
++  let childOptions;
++  const originalError = console.error;
++  const diagnostics = [];
++  console.error = (message) => diagnostics.push(message);
++
++  try {
++    await assert.rejects(runClaudeCode({
++      command: 'claude',
++      prompt: 'hello',
++      options: { cwd: process.cwd() },
++      onEvent: printEvent,
++      spawnImpl(_command, _args, options) {
++        childOptions = options;
++        process.nextTick(() => {
++          child.stdout.write(`${JSON.stringify(event)}\n`);
++          child.stdout.end();
++          child.stderr.end();
++          child.emit('close', 0, null);
++        });
++        return child;
++      },
++    }), /Agent run failed \(error_api\): request rejected/);
++    assert.equal(childOptions.env.ANTHROPIC_API_KEY, undefined);
++    assert.equal(childOptions.env.PATH, process.env.PATH);
++    assert.match(diagnostics.join('\n'), /request rejected/);
++    assert.match(failedResultMessage(event), /request rejected/);
++    assert.throws(() => assertSuccessfulResult(event), /request rejected/);
++  } finally {
++    console.error = originalError;
++    if (originalApiKey === undefined) {
++      delete process.env.ANTHROPIC_API_KEY;
++    } else {
++      process.env.ANTHROPIC_API_KEY = originalApiKey;
++    }
++  }
++});
+ test('doctor reports a missing CLI without failing', () => {
+   const report = getDoctorReport({ env: {}, platform: 'linux', pathValue: '' });
+   assert.match(report, /Claude Code: not found/);
+diff --git a/test/chat-loop.test.mjs b/test/chat-loop.test.mjs
+new file mode 100644
+index 0000000..1ebb394
+--- /dev/null
++++ b/test/chat-loop.test.mjs
+@@ -0,0 +1,44 @@
++import assert from 'node:assert/strict';
++import { Readable, Writable } from 'node:stream';
++import { test } from 'node:test';
++import { runChatLoop } from '../lib/chat-loop.mjs';
++
++async function runPipedChat(text) {
++  const calls = [];
++  let outputText = '';
++  const input = Readable.from([text]);
++  const output = new Writable({
++    write(chunk, encoding, callback) {
++      outputText += chunk.toString();
++      callback();
++    },
++  });
++
++  await runChatLoop({
++    input,
++    output,
++    options: { model: 'stub-model' },
++    noMemory: false,
++    backendArgument: 'sdk',
++    runQuery: async (request) => {
++      calls.push(request);
++      return { sessionId: 'stub-session' };
++    },
++  });
++
++  return { calls, outputText };
++}
++
++test('chat loop handles piped prompts and exit without a model call', async () => {
++  const { calls, outputText } = await runPipedChat('first question\nsecond question\nexit\n');
++
++  assert.deepEqual(calls.map(({ prompt }) => prompt), ['first question', 'second question']);
++  assert.equal(calls[1].options.resume, 'stub-session');
++  assert.match(outputText, /you> /);
++});
++
++test('chat loop ends cleanly when piped input reaches EOF', async () => {
++  const { calls } = await runPipedChat('first question\nsecond question\n');
++
++  assert.deepEqual(calls.map(({ prompt }) => prompt), ['first question', 'second question']);
++});
+diff --git a/test/step1.test.mjs b/test/step1.test.mjs
+new file mode 100644
+index 0000000..1a0a7c8
+--- /dev/null
++++ b/test/step1.test.mjs
+@@ -0,0 +1,54 @@
++import assert from 'node:assert/strict';
++import { readFileSync } from 'node:fs';
++import { spawnSync } from 'node:child_process';
++import { test } from 'node:test';
++import { prioritySchema } from '../01-single-agent/priority-schema.mjs';
++import { buildOptions } from '../01-single-agent/options.mjs';
++import { parseArgs, selectChatOptions } from '../lib/chat-options.mjs';
++
++test('Step 1: priority schema requires a supported priority and reason', () => {
++  assert.deepEqual(prioritySchema, {
++    type: 'object',
++    properties: {
++      priority: { type: 'string', enum: ['low', 'medium', 'high'] },
++      reason: { type: 'string' },
++    },
++    required: ['priority', 'reason'],
++    additionalProperties: false,
++  });
++});
++
++test('Step 1: options use JSON schema output and preserve the priority definitions', () => {
++  const options = buildOptions();
++  assert.equal(options.maxTurns, 3);
++  assert.deepEqual(options.outputFormat, { type: 'json_schema', schema: prioritySchema });
++
++  const claude = readFileSync('01-single-agent/claude-project/CLAUDE.md', 'utf8');
++  assert.doesNotMatch(claude, /TODO/);
++  assert.match(claude, /Judge impact and risk, not tone/);
++  assert.match(claude, /The SDK turns this into JSON \(the Priority Parser\)\./);
++});
++
++test('Step 1: chat dry run loads structured lesson options without a model call', () => {
++  const result = spawnSync(process.execPath, ['lib/chat.mjs', '--lesson', '1', '--dry-run'], { encoding: 'utf8' });
++  assert.equal(result.status, 0, result.stderr);
++  assert.match(result.stdout, /Chat lesson 1 options/);
++  assert.match(result.stdout, /dry run — no model call, not model evidence/);
++  assert.doesNotMatch(result.stdout, /outputFormat/);
++});
++
++test('Step 1: structured chat preserves the lesson schema in its dry run', () => {
++  const args = parseArgs(['--lesson', '1', '--structured', '--dry-run']);
++  assert.equal(args.structured, true);
++  const result = spawnSync(process.execPath, ['lib/chat.mjs', '--lesson', '1', '--structured', '--dry-run'], { encoding: 'utf8' });
++  assert.equal(result.status, 0, result.stderr);
++  assert.match(result.stdout, /outputFormat/);
++  assert.match(result.stdout, /--json-schema/);
++});
++
++test('Step 1: structured chat requires an output format', () => {
++  assert.throws(
++    () => selectChatOptions({ tools: [] }, { lesson: '3', structured: true }),
++    /Lesson 3 has no structured output format; --structured requires outputFormat/,
++  );
++});

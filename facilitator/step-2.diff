@@ -1,0 +1,252 @@
+diff --git a/.claude/agents/customer-reply-agent.md b/.claude/agents/customer-reply-agent.md
+new file mode 100644
+index 0000000..d2930be
+--- /dev/null
++++ b/.claude/agents/customer-reply-agent.md
+@@ -0,0 +1,11 @@
++---
++name: customer-reply-agent
++description: Customer support communication specialist. Writes a short, friendly and professional reply draft to the customer, using the ticket context and the risk-agent result from the main agent.
++---
++You are a customer support communication specialist.
++You write the reply email to the customer of a payment company.
++You receive the original message and the risk-agent result. Do not change or re-decide the priority.
++Write a short, polite reply in plain English: acknowledge the issue, say what happens next, and ask for any missing information the risk-agent listed.
++Do not promise refunds, reversals, compensation or timelines. Do not invent facts.
++Start with `Subject:` and end with `Draft — needs human approval before sending.`
++Do not mention the internal risk note or the priority.
+diff --git a/.claude/agents/risk-agent.md b/.claude/agents/risk-agent.md
+new file mode 100644
+index 0000000..11cc051
+--- /dev/null
++++ b/.claude/agents/risk-agent.md
+@@ -0,0 +1,16 @@
++---
++name: risk-agent
++description: Payment risk and escalation specialist. Reviews one customer-support ticket, assigns priority LOW, MEDIUM or HIGH using the project priority definitions and writes a short internal risk note.
++---
++You are a payment risk and escalation specialist for a payment company's customer support.
++Review the ticket context and identify: customer risk, complaint risk, urgency, and whether escalation is needed.
++Classify the priority using these definitions:
++- LOW — General questions, requests for information, cosmetic issues, or situations with little/no immediate customer or financial impact.
++- MEDIUM — A real service or payment problem affecting one customer, but with no clear sign of fraud, security risk, major financial exposure, or widespread impact.
++- HIGH — Suspected fraud or security risk, unknown/unauthorised transactions, multiple affected transactions, substantial or time-critical financial impact, or evidence that many customers may be affected.
++Judge impact and risk, not tone: angry wording alone never raises the priority, and calm wording never lowers it.
++Use only the supplied ticket context. Do not invent facts. If important information is missing, list it.
++Return exactly:
++Priority: LOW | MEDIUM | HIGH
++Risk note: one or two sentences for the internal team: customer risk, complaint risk, urgency, escalate yes/no.
++Missing information: none, or a short list.
+diff --git a/02-subagents/agent.mjs b/02-subagents/agent.mjs
+new file mode 100644
+index 0000000..6895fb6
+--- /dev/null
++++ b/02-subagents/agent.mjs
+@@ -0,0 +1,4 @@
++import { runLesson } from '../lib/run.mjs';
++import { buildOptions } from './options.mjs';
++
++await runLesson({ buildOptions });
+diff --git a/02-subagents/agents.mjs b/02-subagents/agents.mjs
+new file mode 100644
+index 0000000..6018b17
+--- /dev/null
++++ b/02-subagents/agents.mjs
+@@ -0,0 +1,8 @@
++import { loadAgent } from '../lib/agents.mjs';
++
++// n8n: the Risk Agent and Customer Reply Agent tool nodes. SDK: options.agents.
++// The prompts live in .claude/agents/risk-agent.md and .claude/agents/customer-reply-agent.md.
++export const agents = {
++  'risk-agent': loadAgent('risk-agent'),
++  'customer-reply-agent': loadAgent('customer-reply-agent'),
++};
+diff --git a/02-subagents/claude-project/CLAUDE.md b/02-subagents/claude-project/CLAUDE.md
+new file mode 100644
+index 0000000..f3b9b52
+--- /dev/null
++++ b/02-subagents/claude-project/CLAUDE.md
+@@ -0,0 +1,21 @@
++# Customer Support Orchestrator
++
++## Purpose
++Coordinate specialised agents that process incoming customer-support messages.
++
++## Workflow
++1. Delegate analysis and priority classification to the `risk-agent`.
++2. Wait for the analyst result.
++3. Delegate the customer reply to the `customer-reply-agent`, including the original message and risk-agent result.
++4. Create a Markdown file in `output/` with the final result.
++
++## Required output
++Fill the structured fields from the specialist agents' results: `priority`, `sentiment`,
++`recommended_action`, `summary`, `risk_note` and `customer_reply`.
++
++## Rules
++- Do not perform specialist analysis yourself when `risk-agent` is available.
++- Do not write the customer email yourself when `customer-reply-agent` is available.
++- Use only supplied/project information.
++- Do not search the web for customer or transaction information.
++- Do not invent facts.
+diff --git a/02-subagents/claude-project/output/.gitkeep b/02-subagents/claude-project/output/.gitkeep
+new file mode 100644
+index 0000000..e69de29
+diff --git a/02-subagents/options.mjs b/02-subagents/options.mjs
+new file mode 100644
+index 0000000..e8f2c52
+--- /dev/null
++++ b/02-subagents/options.mjs
+@@ -0,0 +1,21 @@
++import path from 'node:path';
++import { fileURLToPath } from 'node:url';
++import { agents } from './agents.mjs';
++import { ticketSchema } from './ticket-schema.mjs';
++
++const lessonDirectory = path.dirname(fileURLToPath(import.meta.url));
++
++export function buildOptions() {
++  return {
++    cwd: path.join(lessonDirectory, 'claude-project'),
++    settingSources: ['project'],
++    systemPrompt: { type: 'preset', preset: 'claude_code' },
++    agents,
++    tools: ['Agent', 'Write'],
++    allowedTools: ['Agent', 'Write'],
++    disallowedTools: ['WebSearch', 'WebFetch', 'Bash'],
++    permissionMode: 'acceptEdits',
++    maxTurns: 10,
++    outputFormat: { type: 'json_schema', schema: ticketSchema },
++  };
++}
+diff --git a/02-subagents/ticket-schema.mjs b/02-subagents/ticket-schema.mjs
+new file mode 100644
+index 0000000..ee27dcd
+--- /dev/null
++++ b/02-subagents/ticket-schema.mjs
+@@ -0,0 +1,13 @@
++export const ticketSchema = {
++  type: 'object',
++  properties: {
++    priority: { type: 'string', enum: ['low', 'medium', 'high'] },
++    sentiment: { type: 'string', enum: ['neutral', 'frustrated', 'angry'] },
++    recommended_action: { type: 'string', enum: ['auto_reply', 'investigate', 'escalate'] },
++    summary: { type: 'string' },
++    risk_note: { type: 'string' },
++    customer_reply: { type: 'string' },
++  },
++  required: ['priority', 'sentiment', 'recommended_action', 'summary', 'risk_note', 'customer_reply'],
++  additionalProperties: false,
++};
+diff --git a/README.md b/README.md
+index 463a354..7c7f5e8 100644
+--- a/README.md
++++ b/README.md
+@@ -97,7 +97,8 @@ lib/chat.mjs                     interactive chat with optional session memory
+ lib/switch.mjs                   the low / medium / high action and team routes
+ 01-single-agent/                 Step 1: options.mjs, priority-schema.mjs + claude-project/CLAUDE.md
+ 02-subagents/                    Step 2: options.mjs, ticket-schema.mjs, agents.mjs, output/
+-.claude/agents/                  Step 2–3: risk-agent, customer-reply-agent, customer-context-agent
++.claude/agents/                  Step 2: risk-agent, customer-reply-agent
++                                 Step 3: customer-context-agent
+ 03-mcp/                          Step 3: read-only transaction/customer MCP servers
+ .mcp.json                        Step 3: the same MCP server for Claude Code
+ check.mjs, labels.template.json  Step 4: the label check
+diff --git a/lib/agents.mjs b/lib/agents.mjs
+new file mode 100644
+index 0000000..85045c6
+--- /dev/null
++++ b/lib/agents.mjs
+@@ -0,0 +1,25 @@
++import { readFileSync } from 'node:fs';
++import path from 'node:path';
++import { fileURLToPath } from 'node:url';
++
++const agentsDirectory = path.resolve(path.dirname(fileURLToPath(import.meta.url)), '..', '.claude', 'agents');
++
++// Reads a subagent from .claude/agents/<name>.md (the same file format Claude Code uses):
++// the frontmatter `description` tells the orchestrator when to delegate, the body is the subagent's prompt.
++// The tools are set in code, per lesson, so each subagent gets only what it needs.
++export function loadAgent(name, tools = []) {
++  const text = readFileSync(path.join(agentsDirectory, `${name}.md`), 'utf8');
++  const match = text.match(/^---\r?\n([\s\S]*?)\r?\n---\r?\n([\s\S]*)$/);
++
++  if (!match) {
++    throw new Error(`.claude/agents/${name}.md needs a --- frontmatter block with a description.`);
++  }
++
++  const description = /^description:\s*(.+)$/m.exec(match[1])?.[1]?.trim();
++
++  if (!description) {
++    throw new Error(`.claude/agents/${name}.md has no description in its frontmatter.`);
++  }
++
++  return { description, prompt: match[2].trim(), tools };
++}
+diff --git a/package.json b/package.json
+index 8e16999..c8d3d03 100644
+--- a/package.json
++++ b/package.json
+@@ -12,8 +12,9 @@
+     "chat": "node lib/chat.mjs",
+     "doctor": "node lib/doctor.mjs",
+     "lesson1": "node 01-single-agent/agent.mjs",
++    "lesson2": "node 02-subagents/agent.mjs",
+     "test": "node --test \"test/*.test.mjs\"",
+-    "verify": "npm test && npm run lesson1 -- MSG-01 --dry-run && npm run chat -- --dry-run"
++    "verify": "npm test && npm run lesson1 -- MSG-01 --dry-run && npm run lesson2 -- MSG-05 --dry-run && npm run chat -- --dry-run"
+   },
+   "dependencies": {
+     "@anthropic-ai/claude-agent-sdk": "0.3.281"
+diff --git a/test/step2.test.mjs b/test/step2.test.mjs
+new file mode 100644
+index 0000000..f815900
+--- /dev/null
++++ b/test/step2.test.mjs
+@@ -0,0 +1,47 @@
++import assert from 'node:assert/strict';
++import { spawnSync } from 'node:child_process';
++import { test } from 'node:test';
++import { agents } from '../02-subagents/agents.mjs';
++import { buildOptions } from '../02-subagents/options.mjs';
++import { ticketSchema } from '../02-subagents/ticket-schema.mjs';
++
++test('Step 2: risk and customer-reply agents are loaded with the intended prompts', () => {
++  assert.deepEqual(Object.keys(agents), ['risk-agent', 'customer-reply-agent']);
++  for (const agent of Object.values(agents)) {
++    assert.ok(agent.description.length > 20);
++    assert.ok(agent.prompt.length > 100);
++    assert.deepEqual(agent.tools, []);
++  }
++  assert.match(agents['risk-agent'].prompt, /Risk note:/);
++  assert.match(agents['customer-reply-agent'].prompt, /Do not mention the internal risk note or the priority/);
++});
++
++test('Step 2: structured ticket schema has all required fields and valid labels', () => {
++  assert.deepEqual(ticketSchema, {
++    type: 'object',
++    properties: {
++      priority: { type: 'string', enum: ['low', 'medium', 'high'] },
++      sentiment: { type: 'string', enum: ['neutral', 'frustrated', 'angry'] },
++      recommended_action: { type: 'string', enum: ['auto_reply', 'investigate', 'escalate'] },
++      summary: { type: 'string' },
++      risk_note: { type: 'string' },
++      customer_reply: { type: 'string' },
++    },
++    required: ['priority', 'sentiment', 'recommended_action', 'summary', 'risk_note', 'customer_reply'],
++    additionalProperties: false,
++  });
++  assert.deepEqual(buildOptions().outputFormat, { type: 'json_schema', schema: ticketSchema });
++});
++
++test('Step 2: lesson and chat dry runs work offline', () => {
++  const lesson = spawnSync(process.execPath, ['02-subagents/agent.mjs', 'MSG-05', '--dry-run'], { encoding: 'utf8' });
++  assert.equal(lesson.status, 0, lesson.stderr);
++  assert.match(lesson.stdout, /risk-agent/);
++  assert.match(lesson.stdout, /outputFormat/);
++  assert.match(lesson.stdout, /dry run — no model call/);
++
++  const chat = spawnSync(process.execPath, ['lib/chat.mjs', '--lesson', '2', '--dry-run'], { encoding: 'utf8' });
++  assert.equal(chat.status, 0, chat.stderr);
++  assert.match(chat.stdout, /Chat lesson 2 options/);
++  assert.doesNotMatch(chat.stdout, /outputFormat/);
++});

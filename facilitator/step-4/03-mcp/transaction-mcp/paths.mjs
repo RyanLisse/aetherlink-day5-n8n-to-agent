@@ -1,0 +1,8 @@
+import path from 'node:path';
+import { fileURLToPath } from 'node:url';
+
+const repoRoot = path.resolve(path.dirname(fileURLToPath(import.meta.url)), '../..');
+
+// The workbook lives in docs/ (outside every claude-project). Only server.js reads it.
+export const defaultWorkbookPath = path.join(repoRoot, 'docs', 'transactions.xlsx');
+export const defaultCustomerContextPath = path.join(repoRoot, 'docs', 'customer_context.csv');
