@@ -144,11 +144,13 @@ nodes has a place in code:
 
 ## Assignment · Extend the MCP: CRUD tools, hooks and a workflow
 
+Do the core first: Part 1 and Part 2 (about 35 minutes). Part 3 and Part 4 are stretch.
+
 Build this assignment after Step 4. Keep the Step 3 lesson read-only.
 Write only to `participant-output/transactions.working.json`.
 Never write to `docs/transactions.xlsx`.
 
-### Part 1 · CRUD tools and a transaction agent
+### Part 1 · CRUD tools and a transaction agent (core)
 
 **How it works.** The MCP server reads the workbook as its seed.
 It saves changes to a JSON copy.
@@ -169,7 +171,7 @@ Keep write tools out of the orchestrator's `allowedTools`.
 Check that the workbook stays unchanged.
 Make the agent look up a record before it writes.
 
-### Part 2 · Conditional approval hooks
+### Part 2 · Conditional approval hooks (core)
 
 **How it works.** Use four permission layers.
 Check the agent tool list first.
@@ -195,7 +197,7 @@ Stop after a denial. Do not retry or delegate the write.
 It checks both hook configurations and the no-retry rules.
 It does not call a model.
 
-### Part 3 · Add drafts and a fraud-check agent
+### Part 3 · Add drafts and a fraud-check agent (stretch)
 
 **How it works.** `save_reply_draft` saves a Markdown draft with a review header.
 It replaces an earlier draft with the same message ID.
@@ -220,7 +222,7 @@ Make `npm run reset:mcp` remove drafts.
 It checks the review header.
 The fraud agent has only read tools.
 
-### Part 4 · Ask a person and resolve a ticket
+### Part 4 · Ask a person and resolve a ticket (stretch)
 
 **How it works.** Use the built-in `AskUserQuestion` tool.
 Do not build a custom MCP tool for questions.
@@ -254,6 +256,15 @@ Extend `scripts/check-assignment.mjs` and its tests.
 **Done when:** the dry run lists each step and branch.
 The handler tests cover a TTY answer and no TTY.
 The checker passes on the solution branch.
+
+### Check your work
+
+Run `npm run check:assignment` after Part 2 and again after Part 4.
+
+- If core items remain, the check exits 1. Fix them first.
+- If core passes with open stretch items, the check exits 0. Stretch is optional.
+- If both parts pass, the check reports success and exits 0.
+- Run `npm run check:assignment -- --strict` to require stretch. Open stretch items then exit 1.
 
 ## Safety
 
