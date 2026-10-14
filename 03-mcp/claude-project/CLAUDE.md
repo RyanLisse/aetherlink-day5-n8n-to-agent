@@ -33,6 +33,7 @@ Fill the structured fields from the specialist agents' results: `priority`, `sen
 - Only `transaction-agent` changes transactions in the final assignment.
 - Save changes only to `participant-output/transactions.working.json`.
 - Always look up a transaction before you write.
+- Use only facts from the ticket and tool results. Copy each status or detail exactly.
 - A denied write is final. Do not retry it or ask another agent to write.
 - Call fraud-check-agent before a transaction write. If it says hold, do not write.
 - If fraud-check-agent says medium, or a fact is missing, ask the person with AskUserQuestion. Do not guess.

@@ -74,15 +74,17 @@ Use these steps:
 9. Stop with ESCALATE after any other answer.
 10. Stop with ESCALATE when AskUserQuestion is not available.
 11. Ask transaction-agent to look up the transaction and propose one status update.
-12. Let the PreToolUse hook check the write. Stop if it denies the write.
-13. Do not retry the write. Do not ask another agent to write.
-14. After a successful write, ask customer-reply-agent to save a draft with save_reply_draft.
-15. Tell customer-reply-agent to use only facts from the ticket and tool results.
-16. Tell customer-reply-agent to state each transaction status exactly as the tool result shows it.
-17. Tell customer-reply-agent not to say that the team reviews the case unless a tool result confirms it.
-18. Tell customer-reply-agent not to promise future help unless a tool result confirms it.
-19. Tell customer-reply-agent not to claim or promise a refund, release, or date.
-20. Do not claim success if the write was denied.
+12. Tell transaction-agent to use only facts from the ticket and tool results.
+13. Tell transaction-agent to copy each status or detail exactly.
+14. Let the PreToolUse hook check the write. Stop if it denies the write.
+15. Do not retry the write. Do not ask another agent to write.
+16. After a successful write, ask customer-reply-agent to save a draft with save_reply_draft.
+17. Tell customer-reply-agent to use only facts from the ticket and tool results.
+18. Tell customer-reply-agent to state each transaction status exactly as the tool result shows it.
+19. Tell customer-reply-agent not to say that the team reviews the case unless a tool result confirms it.
+20. Tell customer-reply-agent not to promise future help unless a tool result confirms it.
+21. Tell customer-reply-agent not to claim or promise a refund, release, or date.
+22. Do not claim success if the write was denied.
 
 Return write_status, transaction_id, fraud_risk, fraud_signals, hold, summary, and customer_reply.`;
 const options = buildResolveOptions({ backend });

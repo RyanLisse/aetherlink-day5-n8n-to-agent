@@ -18,6 +18,9 @@ test('resolve dry run prints the fixed workflow without a model call', () => {
   assert.match(result.stdout, /Ask one question/);
   assert.match(result.stdout, /Continue only after the person selects Continue/);
   assert.match(result.stdout, /Stop with ESCALATE after any other answer or a denied write/);
+  const resolvePrompt = readFileSync(path.join(root, '03-mcp/resolve.mjs'), 'utf8');
+  assert.match(resolvePrompt, /Tell transaction-agent to use only facts from the ticket and tool results/);
+  assert.match(resolvePrompt, /Tell transaction-agent to copy each status or detail exactly/);
   assert.match(result.stdout, /Use only facts from the ticket and tool results/);
   assert.match(result.stdout, /State each transaction status exactly as the tool result shows it/);
   assert.match(result.stdout, /Do not say that the team reviews the case unless a tool result confirms it/);
@@ -55,5 +58,21 @@ test('customer reply agent and project instructions prohibit unsupported claims'
     assert.match(instructions, /customer-reply-agent`? not to say that the team reviews the case unless a tool result confirms it/);
     assert.match(instructions, /customer-reply-agent`? not to promise future help unless a tool result confirms it/);
     assert.match(instructions, /customer-reply-agent`? not to claim or promise a refund, release, or date/);
+  }
+});
+
+test('transaction-agent writes use only source facts and exact details', () => {
+  const transactionAgent = readFileSync(
+    path.join(root, '03-mcp/claude-project/.claude/agents/transaction-agent.md'),
+    'utf8',
+  );
+  const claudeInstructions = readFileSync(
+    path.join(root, '03-mcp/claude-project/CLAUDE.md'),
+    'utf8',
+  );
+
+  for (const instructions of [transactionAgent, claudeInstructions]) {
+    assert.match(instructions, /Use only facts from the ticket and tool results/);
+    assert.match(instructions, /Copy each status or detail exactly/);
   }
 });
