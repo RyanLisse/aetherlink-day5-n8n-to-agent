@@ -604,8 +604,10 @@ agents read-only or tool-free.
 `permissionMode`, and then the `PreToolUse` hook. Reads pass without a prompt. Updates below €100 pass
 and write an audit line. Larger updates, adds and deletes need human approval.
 
-**Demo (facilitator):** show a small update and its audit line. Ask for approval on a large update.
-Show how a denial stops the workflow.
+**Demo (facilitator):** run `npm run hook:demo -- small`.
+Use `large`, `add`, `delete`, or `read` for another case.
+Show that TX-1002 (€49.99) passes and TX-1007 (€899) asks for approval.
+Show that add and delete ask for approval. Show that reads pass.
 
 **Your turn:** add shared SDK and Claude Code hooks. Check transaction IDs and statuses. Add one audit
 line after each write. Stop after a denial. Do not retry or delegate the write.
@@ -618,7 +620,7 @@ line after each write. Stop after a denial. Do not retry or delegate the write.
 draft with the same message ID. `customer-reply-agent` gets only this tool. `fraud-check-agent` gets
 only read tools. Stop before a write when hold is true or risk is high.
 
-**Demo (facilitator):** save a draft for MSG-03. Show the header and path. Show the fraud agent's
+**Demo (facilitator):** save a draft for MSG-07. Show the header and path. Show the fraud agent's
 JSON result.
 
 **Your turn:** add `drafts-server.js` and the draft tool. Use `DRAFTS_DIR`. Add `drafts` to
@@ -633,19 +635,32 @@ The fraud agent has only read tools.
 
 ### Part 4 · Ask a person and resolve a ticket
 
-**How it works:** use the built-in `AskUserQuestion` tool. Do not build a custom MCP question tool.
+**How it works:** use the built-in `AskUserQuestion` tool. Keep it in SDK `tools`, not in
+`allowedTools`. Do not build a custom MCP question tool.
 Ask one question when risk is medium or a fact is missing. Use interactive Claude Code with
 `--allowedTools AskUserQuestion`. `claude -p` excludes the tool and reports `ESCALATE`.
 
-**Demo (facilitator):** run `npm run resolve -- MSG-03 --backend sdk` in a TTY. Use TX-1003 as a
-training target. Approve one run and deny one run. Do not claim TX-1003 belongs to MSG-03. Do not
-retry or delegate a denied write.
+**Demo (facilitator):** run `npm run resolve -- MSG-07 --backend sdk` in a TTY. MSG-07 links
+CUST-007 to TX-1007, Vertex Commerce. The amount is €899. The status is FAILED. The note says
+"amount appears reserved." Approve one run with `y`. Deny another run with `N`. Check that a denial
+stops without a retry, another agent, or a draft.
+
+Run MSG-08. TX-1014 has `Fraud Flag Yes`. Check that the workflow reports `ESCALATE` and makes no
+write.
+
+Run MSG-09. CUST-004 does not match TX-1018, which belongs to Juniper Hotels. Choose Escalate in
+the question. Check that the workflow makes no write. Run MSG-09 without a TTY. Check that the
+workflow reports `ESCALATE`.
+
+Run `npm run hook:demo -- small`. Use `large`, `add`, `delete`, or `read` for another case.
+The small fixture uses TX-1002 (€49.99).
+The large fixture uses TX-1007 (€899). No ticket fits a small update. Do not invent one.
 
 **Your turn:** add `ask-human.mjs` for the SDK `canUseTool` callback. Give `AskUserQuestion` to the
-orchestrator only. Add the rules to `CLAUDE.md`. Add the `resolve` CLI and `/resolve-ticket`.
-Call `fraud-check-agent` before a write. Stop with `ESCALATE` when hold is true or risk is high.
-Save the reply with `customer-reply-agent`. Add handler and dry-run tests. Extend
-`scripts/check-assignment.mjs` and its tests.
+orchestrator only. Keep it out of SDK `allowedTools`. Add the rules to `CLAUDE.md`.
+Add the `resolve` CLI and `/resolve-ticket`. Call `fraud-check-agent` before a write.
+Stop with `ESCALATE` when hold is true or risk is high. Save the reply with `customer-reply-agent`.
+Add handler and dry-run tests. Extend `scripts/check-assignment.mjs` and its tests.
 
 **Done when:** the dry run lists each step and branch. The handler tests cover a TTY answer and no
 TTY. The checker passes on the solution branch.
