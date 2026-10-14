@@ -10,7 +10,8 @@ export function buildOptions() {
     // STEP 1: settingSources → ['project'] so query() loads claude-project/CLAUDE.md (the n8n "System Message").
     // STEP 1: systemPrompt → { type: 'preset', preset: 'claude_code' } (CLAUDE.md is added on top of the preset).
     // STEP 1: tools → [] and disallowedTools → ['WebSearch', 'WebFetch', 'Bash']: this agent only reads and answers.
-    // STEP 1: maxTurns → 2 (n8n: "Max Iterations").
+    // STEP 1: maxTurns → 3 (n8n: "Max Iterations").
+    // STEP 1: outputFormat → { type: 'json_schema', schema: prioritySchema } (Priority Parser).
   };
 }
 

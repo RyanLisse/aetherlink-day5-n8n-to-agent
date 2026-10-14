@@ -5,3 +5,5 @@ CUST-003,GlobalPay Commerce,Enterprise,2000,3,True
 CUST-004,Coffee Corner,Standard,8,0,False
 CUST-005,MegaStore Europe,Enterprise,5000,2,True
 CUST-006,City Tickets,Premium,600,4,True
+CUST-007,Vertex Commerce,Unknown,,,
+CUST-008,Futura Labs,Unknown,,,
