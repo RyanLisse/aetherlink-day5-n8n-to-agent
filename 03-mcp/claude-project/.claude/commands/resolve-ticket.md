@@ -12,6 +12,11 @@ Use this order:
 8. Let `PreToolUse` check the write. Stop if it denies the write.
 9. Do not retry a denied write. Do not ask another agent to write.
 10. After a successful write, ask `customer-reply-agent` to save a draft.
+11. Tell `customer-reply-agent` to use only facts from the ticket and tool results.
+12. Tell `customer-reply-agent` to state each transaction status exactly as the tool result shows it.
+13. Tell `customer-reply-agent` not to say that the team reviews the case unless a tool result confirms it.
+14. Tell `customer-reply-agent` not to promise future help unless a tool result confirms it.
+15. Tell `customer-reply-agent` not to claim or promise a refund, release, or date.
 
 Use only ticket facts and tool results.
 Do not guess a customer-to-transaction match.

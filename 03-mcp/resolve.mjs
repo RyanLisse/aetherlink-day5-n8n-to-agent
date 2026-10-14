@@ -77,7 +77,12 @@ Use these steps:
 12. Let the PreToolUse hook check the write. Stop if it denies the write.
 13. Do not retry the write. Do not ask another agent to write.
 14. After a successful write, ask customer-reply-agent to save a draft with save_reply_draft.
-15. Do not claim success if the write was denied.
+15. Tell customer-reply-agent to use only facts from the ticket and tool results.
+16. Tell customer-reply-agent to state each transaction status exactly as the tool result shows it.
+17. Tell customer-reply-agent not to say that the team reviews the case unless a tool result confirms it.
+18. Tell customer-reply-agent not to promise future help unless a tool result confirms it.
+19. Tell customer-reply-agent not to claim or promise a refund, release, or date.
+20. Do not claim success if the write was denied.
 
 Return write_status, transaction_id, fraud_risk, fraud_signals, hold, summary, and customer_reply.`;
 const options = buildResolveOptions({ backend });
@@ -86,7 +91,7 @@ const result = await runQuery({
   prompt,
   options,
   dryRun,
-  dryRunNote: 'Look up the customer and the transaction. Run fraud-check-agent before a write. Stop with ESCALATE when hold is true or risk is high. Ask one question when risk is medium or a fact is missing. Continue only after the person selects Continue. Stop with ESCALATE after any other answer or a denied write. Propose one update. Let the hook check the write. Save a draft with customer-reply-agent.',
+  dryRunNote: 'Look up the customer and the transaction. Run fraud-check-agent before a write. Stop with ESCALATE when hold is true or risk is high. Ask one question when risk is medium or a fact is missing. Continue only after the person selects Continue. Stop with ESCALATE after any other answer or a denied write. Propose one update. Let the hook check the write. Save a draft with customer-reply-agent. Use only facts from the ticket and tool results. State each transaction status exactly as the tool result shows it. Do not say that the team reviews the case unless a tool result confirms it. Do not promise future help unless a tool result confirms it. Do not claim or promise a refund, release, or date.',
   backendArgument: backend,
 });
 

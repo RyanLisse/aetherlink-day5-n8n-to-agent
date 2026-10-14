@@ -37,4 +37,9 @@ Fill the structured fields from the specialist agents' results: `priority`, `sen
 - Call fraud-check-agent before a transaction write. If it says hold, do not write.
 - If fraud-check-agent says medium, or a fact is missing, ask the person with AskUserQuestion. Do not guess.
 - Ask customer-reply-agent to save drafts with `mcp__drafts__save_reply_draft`.
+- Use only facts from the ticket and tool results in customer reply drafts.
+- State each transaction status exactly as the tool result shows it.
+- Do not say that the team reviews the case unless a tool result confirms it.
+- Do not promise future help unless a tool result confirms it.
+- Do not claim or promise a refund, release, or date.
 - If AskUserQuestion is not available, report ESCALATE and stop.
