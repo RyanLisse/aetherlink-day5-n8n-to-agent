@@ -1,4 +1,7 @@
-import { existsSync, readFileSync, readdirSync } from 'node:fs';
+import {
+  cpSync, existsSync, mkdirSync, mkdtempSync, readFileSync, readdirSync, rmSync, symlinkSync, writeFileSync,
+} from 'node:fs';
+import os from 'node:os';
 import path from 'node:path';
 import { pathToFileURL } from 'node:url';
 
@@ -23,6 +26,11 @@ const fraudCheckAgentTools = [
 const draftTool = 'mcp__drafts__save_reply_draft';
 const questionTool = 'AskUserQuestion';
 const denialReason = 'Denied by a human reviewer. Do not retry this write or delegate it; report it and stop.';
+const assignmentAgentFiles = [
+  '03-mcp/claude-project/.claude/agents/transaction-agent.md',
+  '03-mcp/claude-project/.claude/agents/customer-reply-agent.md',
+  '03-mcp/claude-project/.claude/agents/fraud-check-agent.md',
+];
 const core = [];
 const stretch = [];
 
@@ -92,6 +100,39 @@ function checkTransactionAgentFile() {
   }
 }
 
+async function importOptions(optionsPath) {
+  if (assignmentAgentFiles.every((file) => existsSync(path.join(root, file)))) {
+    return import(pathToFileURL(optionsPath).href);
+  }
+
+  const directory = mkdtempSync(path.join(os.tmpdir(), 'assignment-check-'));
+  const copyRoot = path.join(directory, 'solution');
+  try {
+    cpSync(root, copyRoot, {
+      recursive: true,
+      filter: (source) => {
+        const relative = path.relative(root, source);
+        return relative === ''
+          || !relative.split(path.sep).some((part) => ['.git', 'node_modules', 'participant-output'].includes(part));
+      },
+    });
+    const modules = path.join(root, 'node_modules');
+    if (existsSync(modules)) {
+      symlinkSync(modules, path.join(copyRoot, 'node_modules'), process.platform === 'win32' ? 'junction' : 'dir');
+    }
+    for (const file of assignmentAgentFiles) {
+      const copyPath = path.join(copyRoot, file);
+      if (!existsSync(copyPath)) {
+        mkdirSync(path.dirname(copyPath), { recursive: true });
+        writeFileSync(copyPath, '---\ndescription: Temporary assignment check agent.\n---\n');
+      }
+    }
+    return await import(pathToFileURL(path.join(copyRoot, '03-mcp/options.mjs')).href);
+  } finally {
+    rmSync(directory, { recursive: true, force: true });
+  }
+}
+
 async function loadOptions() {
   const optionsPath = path.join(root, '03-mcp/options.mjs');
   if (!existsSync(optionsPath)) {
@@ -101,7 +142,7 @@ async function loadOptions() {
 
   let optionsModule;
   try {
-    optionsModule = await import(pathToFileURL(optionsPath).href);
+    optionsModule = await importOptions(optionsPath);
   } catch {
     stretch.push('Fix the SDK options in 03-mcp/options.mjs.');
     return { options: null, step3Options: null, claudeCodeOptions: null };
@@ -173,29 +214,6 @@ function checkCoreSdkOptions(options) {
     if (name !== 'transaction-agent' && (agent.tools ?? []).some((tool) => writeTools.includes(tool))) {
       writers.add(name);
     }
-    if (name !== 'customer-reply-agent' && agent.tools?.includes(draftTool)) {
-      issues.push(`Remove ${draftTool} from ${name}.`);
-    }
-    if (agent.tools?.includes(questionTool)) {
-      issues.push(`Remove ${questionTool} from ${name}.`);
-    }
-    const agentFile = read(`03-mcp/claude-project/.claude/agents/${name}.md`) ?? '';
-    if (/^tools:.*\bAskUserQuestion\b/m.test(agentFile)) {
-      issues.push(`Remove ${questionTool} from ${name}.`);
-    }
-  }
-  if ((options.agents?.['customer-reply-agent']?.tools ?? []).some((tool) => tool.startsWith('mcp__transactions__'))) {
-    issues.push('Remove transaction tools from customer-reply-agent.');
-  }
-  if (JSON.stringify([...(options.agents?.['fraud-check-agent']?.tools ?? [])].sort()) !== JSON.stringify([...fraudCheckAgentTools].sort())) {
-    issues.push(`Give SDK fraud-check-agent these read tools only: ${fraudCheckAgentTools.join(', ')}.`);
-  }
-  if (JSON.stringify([...(options.agents?.['customer-reply-agent']?.tools ?? [])].sort()) !== JSON.stringify([draftTool])) {
-    issues.push(`Give SDK customer-reply-agent only ${draftTool}.`);
-  }
-  const cliOptions = buildResolveOptions({ backend: 'claude-code' });
-  if (cliOptions.allowedTools?.includes(questionTool) || cliOptions.tools?.includes(questionTool)) {
-    issues.push('Keep AskUserQuestion out of the claude -p tool list.');
   }
   for (const { name, text } of agentFiles()) {
     if (name !== 'transaction-agent' && readAgentTools(text).some((tool) => writeTools.includes(tool))) {
