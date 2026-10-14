@@ -195,30 +195,65 @@ Stop after a denial. Do not retry or delegate the write.
 It checks both hook configurations and the no-retry rules.
 It does not call a model.
 
-### Part 3 · Resolve a ticket
+### Part 3 · Add drafts and a fraud-check agent
 
-**How it works.** Run `npm run resolve -- MSG-0N`.
-The workflow looks up the customer and transaction.
-Then `transaction-agent` proposes one update.
-The hook checks the write.
-The workflow saves a reply draft in the lesson output folder.
-Run `/resolve-ticket` in Claude Code to use the same steps.
+**How it works.** `save_reply_draft` saves a Markdown draft with a review header.
+It replaces an earlier draft with the same message ID.
+`customer-reply-agent` gets only the draft tool.
+`fraud-check-agent` gets only read tools.
+Stop before a write when hold is true or risk is high.
 
-**Demo (facilitator).** Use `MSG-03` and training target `TX-1003`.
-Change `PENDING` to `COMPLETED`.
+**Demo (facilitator).** Save a draft for `MSG-03`.
+Show the header and path.
+Show the fraud agent's JSON result.
+
+**Your turn.** Add `drafts-server.js` and the `save_reply_draft` tool.
+Use `DRAFTS_DIR` and create its folder before saving.
+Add `drafts` to `.mcp.json` and assignment options only.
+Add `customer-reply-agent.md` with only the draft tool.
+Add `fraud-check-agent.md` with only customer and transaction read tools.
+Wire both agents in `03-mcp/agents.mjs`.
+Let the hook allow and audit draft saves.
+Make `npm run reset:mcp` remove drafts.
+
+**Done when:** a test saves and replaces a draft in a temporary folder.
+It checks the review header.
+The fraud agent has only read tools.
+
+### Part 4 · Ask a person and resolve a ticket
+
+**How it works.** Use the built-in `AskUserQuestion` tool.
+Do not build a custom MCP tool for questions.
+Ask one question when risk is medium or a fact is missing.
+Use `claude --allowedTools AskUserQuestion` for the interactive route.
+The `claude -p` route excludes this tool and reports `ESCALATE`.
+
+**Demo (facilitator).** Run `npm run resolve -- MSG-03 --backend sdk`.
+Use supplied target `TX-1003`. Change `PENDING` to `COMPLETED`.
 Approve one run. Deny one run.
-Do not claim TX-1003 belongs to the customer in MSG-03.
 Do not retry or delegate a denied write.
 
-**Your turn.** Add `npm run resolve -- MSG-0N [--backend sdk|claude-code] [--dry-run]`.
-Add the matching slash command.
-Run once with approval and once with denial.
-Check the working copy, audit log and reply draft.
-Run `npm run reset:mcp` after the approved run.
+**Your turn.** Add `ask-human.mjs` for the SDK `canUseTool` callback.
+Give `AskUserQuestion` to the orchestrator only.
+Add the rules to `CLAUDE.md`.
+Add `npm run resolve -- MSG-0N [--backend sdk|claude-code] [--dry-run]`.
+Add `.claude/commands/resolve-ticket.md` with the same workflow.
+Call `fraud-check-agent` before a write.
+Stop with `ESCALATE` when hold is true or risk is high.
+Save the reply with `customer-reply-agent`.
+Add handler and dry-run tests.
+Extend `scripts/check-assignment.mjs` and its tests.
 
-**Done when:** the approved run records the update and saves a reply draft.
-The denied run makes no second write attempt.
-It does not ask another agent to retry or claim success.
+**Where and why.** `ask-human.mjs` handles SDK questions.
+`options.mjs` gives the tool to the orchestrator.
+`resolve.mjs` runs the workflow.
+`resolve-ticket.md` defines the interactive command.
+`CLAUDE.md` states the agent rules.
+`check-assignment.mjs` checks the rules without a model.
+
+**Done when:** the dry run lists each step and branch.
+The handler tests cover a TTY answer and no TTY.
+The checker passes on the solution branch.
 
 ## Safety
 
