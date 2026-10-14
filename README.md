@@ -158,6 +158,10 @@ Only `transaction-agent` changes transactions.
 Give it `get_transaction`, `update_transaction` and `add_transaction`.
 Keep `delete_transaction` out of every agent.
 Give `customer-reply-agent` only the draft tool.
+The agent keeps existing `issue_details` and appends ` | MSG-0N (customer report): <one short sentence of what the customer says>`.
+The added sentence is the only customer claim, not a confirmed fact.
+The agent changes status only when the ticket and tool results support a new status.
+Otherwise, the agent keeps the current status exactly.
 
 **Demo (facilitator).** Show the Zod schemas in the server.
 Run one update. Show the JSON copy.
@@ -174,6 +178,10 @@ Keep write tools out of the orchestrator's `allowedTools`.
 **Done when:** the MCP smoke test adds, updates and deletes a record in a new store.
 Check that the workbook stays unchanged.
 Make the agent look up a record before it writes.
+Keep existing `issue_details` and append ` | MSG-0N (customer report): <one short sentence of what the customer says>`.
+Treat the added sentence as the only customer claim, not a confirmed fact.
+Change status only when the ticket and tool results support a new status.
+Otherwise, keep the current status exactly.
 
 ### Part 2 · Conditional approval hooks (core)
 
@@ -240,6 +248,8 @@ MSG-07 links CUST-007 to TX-1007, Vertex Commerce.
 The amount is €899. The status is FAILED.
 The note says "amount appears reserved."
 Approve one run with `y`. Deny another run with `N`.
+After approval, check the labelled customer report in `issue_details`.
+Check that the status stays `FAILED`.
 Check that a denial stops without a retry, another agent, or a draft.
 Run MSG-08. TX-1014 has `Fraud Flag Yes`.
 Check that the workflow reports `ESCALATE` and makes no write.

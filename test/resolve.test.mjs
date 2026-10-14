@@ -19,8 +19,18 @@ test('resolve dry run prints the fixed workflow without a model call', () => {
   assert.match(result.stdout, /Continue only after the person selects Continue/);
   assert.match(result.stdout, /Stop with ESCALATE after any other answer or a denied write/);
   const resolvePrompt = readFileSync(path.join(root, '03-mcp/resolve.mjs'), 'utf8');
+  const resolveCommand = readFileSync(
+    path.join(root, '03-mcp/claude-project/.claude/commands/resolve-ticket.md'),
+    'utf8',
+  );
+  assert.match(resolvePrompt, /record the ticket in issue_details/);
+  assert.match(resolvePrompt, /Keep current issue_details and append one claim: \| MSG-0N \(customer report\):/);
+  assert.match(resolveCommand, /Append one claim with this format: ` \| MSG-0N \(customer report\): <one short sentence of what the customer says>/);
+  assert.match(resolvePrompt, /Change status only when the ticket and tool results support a new status/);
+  assert.match(resolvePrompt, /Otherwise, keep the current status exactly/);
   assert.match(resolvePrompt, /Tell transaction-agent to use only facts from the ticket and tool results/);
-  assert.match(resolvePrompt, /Tell transaction-agent to copy each status or detail exactly/);
+  assert.match(resolvePrompt, /Tell transaction-agent to copy each status and existing detail exactly/);
+  assert.match(result.stdout, /Record the ticket in issue_details as the only allowed customer claim/);
   assert.match(result.stdout, /Use only facts from the ticket and tool results/);
   assert.match(result.stdout, /State each transaction status exactly as the tool result shows it/);
   assert.match(result.stdout, /Do not say that the team reviews the case unless a tool result confirms it/);
@@ -73,6 +83,13 @@ test('transaction-agent writes use only source facts and exact details', () => {
 
   for (const instructions of [transactionAgent, claudeInstructions]) {
     assert.match(instructions, /Use only facts from the ticket and tool results/);
-    assert.match(instructions, /Copy each status or detail exactly/);
+    assert.match(instructions, /Copy each status and existing detail exactly/);
+    assert.match(instructions, /only customer claim, not a confirmed fact|only allowed customer claim, not a confirmed fact/);
+    assert.match(instructions, /Change status only when the ticket and tool results support a new status/);
   }
+  assert.match(transactionAgent, /Keep the current issue_details text/);
+  assert.match(transactionAgent, /MSG-0N \(customer report\): <one short sentence of what the customer says>/);
+  assert.match(transactionAgent, /Change status only when the ticket and tool results support a new status/);
+  assert.match(transactionAgent, /Otherwise, keep the current status exactly/);
+  assert.match(claudeInstructions, /Otherwise, keep the status exactly/);
 });

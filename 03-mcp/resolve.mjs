@@ -73,18 +73,21 @@ Use these steps:
 8. Give the person clear options. Continue only after the person selects Continue.
 9. Stop with ESCALATE after any other answer.
 10. Stop with ESCALATE when AskUserQuestion is not available.
-11. Ask transaction-agent to look up the transaction and propose one status update.
-12. Tell transaction-agent to use only facts from the ticket and tool results.
-13. Tell transaction-agent to copy each status or detail exactly.
-14. Let the PreToolUse hook check the write. Stop if it denies the write.
-15. Do not retry the write. Do not ask another agent to write.
-16. After a successful write, ask customer-reply-agent to save a draft with save_reply_draft.
-17. Tell customer-reply-agent to use only facts from the ticket and tool results.
-18. Tell customer-reply-agent to state each transaction status exactly as the tool result shows it.
-19. Tell customer-reply-agent not to say that the team reviews the case unless a tool result confirms it.
-20. Tell customer-reply-agent not to promise future help unless a tool result confirms it.
-21. Tell customer-reply-agent not to claim or promise a refund, release, or date.
-22. Do not claim success if the write was denied.
+11. Ask transaction-agent to look up the transaction and record the ticket in issue_details.
+12. Keep current issue_details and append one claim: | MSG-0N (customer report): <one short sentence of what the customer says>.
+13. Treat the added sentence as the only allowed customer claim, not a confirmed fact.
+14. Change status only when the ticket and tool results support a new status. Otherwise, keep the current status exactly.
+15. Tell transaction-agent to use only facts from the ticket and tool results.
+16. Tell transaction-agent to copy each status and existing detail exactly.
+17. Let the PreToolUse hook check the write. Stop if it denies the write.
+18. Do not retry the write. Do not ask another agent to write.
+19. After a successful write, ask customer-reply-agent to save a draft with save_reply_draft.
+20. Tell customer-reply-agent to use only facts from the ticket and tool results.
+21. Tell customer-reply-agent to state each transaction status exactly as the tool result shows it.
+22. Tell customer-reply-agent not to say that the team reviews the case unless a tool result confirms it.
+23. Tell customer-reply-agent not to promise future help unless a tool result confirms it.
+24. Tell customer-reply-agent not to claim or promise a refund, release, or date.
+25. Do not claim success if the write was denied.
 
 Return write_status, transaction_id, fraud_risk, fraud_signals, hold, summary, and customer_reply.`;
 const options = buildResolveOptions({ backend });
@@ -93,7 +96,7 @@ const result = await runQuery({
   prompt,
   options,
   dryRun,
-  dryRunNote: 'Look up the customer and the transaction. Run fraud-check-agent before a write. Stop with ESCALATE when hold is true or risk is high. Ask one question when risk is medium or a fact is missing. Continue only after the person selects Continue. Stop with ESCALATE after any other answer or a denied write. Propose one update. Let the hook check the write. Save a draft with customer-reply-agent. Use only facts from the ticket and tool results. State each transaction status exactly as the tool result shows it. Do not say that the team reviews the case unless a tool result confirms it. Do not promise future help unless a tool result confirms it. Do not claim or promise a refund, release, or date.',
+  dryRunNote: 'Look up the customer and the transaction. Run fraud-check-agent before a write. Stop with ESCALATE when hold is true or risk is high. Ask one question when risk is medium or a fact is missing. Continue only after the person selects Continue. Stop with ESCALATE after any other answer or a denied write. Record the ticket in issue_details as the only allowed customer claim. Change status only when the ticket and tool results support a new status. Otherwise, keep the current status exactly. Let the hook check the write. Save a draft with customer-reply-agent. Use only facts from the ticket and tool results. State each transaction status exactly as the tool result shows it. Do not say that the team reviews the case unless a tool result confirms it. Do not promise future help unless a tool result confirms it. Do not claim or promise a refund, release, or date.',
   backendArgument: backend,
 });
 
