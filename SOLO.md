@@ -683,31 +683,39 @@ draft for a person to review before sending. Catch up: `git switch step-3`.
 
 ## Step 4 · Acceptance table and `npm run check`
 
-**Goal:** check your labels and record the evidence.
+**Goal:** check labels from your runs.
 
-### How the loop works here
+### How the check works
 
-The offline checker compares your entered labels with the answer key; it does not call a model.
+The checker compares your labels with the answer key.
+It does not call a model.
 
-### Demo (facilitator) → Your turn
+### Demo (facilitator)
 
-**Goal:** see how completed labels are checked without treating example output as model evidence.
+Run `npm run check` once.
+On a fresh clone, the command creates an empty `labels.json`.
+Fill it with labels from your own runs.
+Run `npm run check` a second time.
 
-**Facilitator demo:** run `npm run check` with a prepared `labels.json` filled using labels from
-your own runs, then show the `correct` or `revise` lines plus the Lesson totals. A fresh clone only
-creates the empty file on its first check.
+Show one `correct` or `revise` line and the lesson totals.
 
-**Your turn:** copy the Step 4 checker, run it once to create `labels.json`, fill it with labels from
-your own runs, then run `npm run check` a second time.
+### Your turn
+
+Copy the Step 4 checker.
+Run it once to create `labels.json`.
+Fill it with labels from your own runs.
+Run `npm run check` a second time.
 
 ```sh
 git checkout origin/step-4 -- check.mjs answer-key.json labels.template.json package.json
 npm run check
 ```
 
-The first run in a fresh clone creates an empty `labels.json`; it does not contain model results.
-Fill in `low`, `medium` or `high` from your own runs for each message you ran, leave the rest empty,
-and run `npm run check` a second time:
+The first run in a fresh clone creates an empty `labels.json`.
+It does not contain model results.
+Enter `low`, `medium` or `high` for each message that you ran.
+Leave the other labels empty.
+Run `npm run check` a second time:
 
 ```text
 MSG-01 correct
@@ -796,85 +804,103 @@ More stretch:
 
 ## Assignment · Extend the MCP: CRUD tools, hooks and a workflow
 
-Build the final assignment after Step 4. Keep the Step 3 lesson read-only. This assignment writes only
-to `participant-output/transactions.working.json`; never write to `docs/transactions.xlsx`.
+Build this assignment after Step 4. Keep the Step 3 lesson read-only.
+Write only to `participant-output/transactions.working.json`.
+Never write to `docs/transactions.xlsx`.
 
 ### Part 1 · Add CRUD tools and a transaction agent
 
-**How it works:** the MCP server reads the workbook as its seed, then saves changes to a separate JSON
-working copy. `TRANSACTIONS_STORE` can point to another working-copy path. The `transaction-agent`
-gets only the tools it needs. `risk-agent` and `customer-context-agent` stay read-only,
-`customer-reply-agent` gets no MCP tools, and no agent gets `delete_transaction`.
+**How it works.** The MCP server reads the workbook as its seed. It saves changes to a JSON copy.
+Set `TRANSACTIONS_STORE` to use another copy. Give `transaction-agent` only the tools it needs.
+Keep `risk-agent` and `customer-context-agent` read-only.
+Give `customer-reply-agent` no MCP tools. Give no agent `delete_transaction`.
 
-**Demo (facilitator):** show the three Zod input schemas in `03-mcp/transaction-mcp/server.js`.
-Trace one update from the workbook seed to the JSON copy, then run `npm run reset:mcp`.
+**Demo (facilitator).** Show the three Zod input schemas in `03-mcp/transaction-mcp/server.js`.
+Run one update. Show the JSON copy. Then run `npm run reset:mcp`.
 
 **Your turn:**
 
 1. Add `add_transaction`, `update_transaction` and `delete_transaction` to
-   `03-mcp/transaction-mcp/server.js`. Validate their inputs with Zod.
-2. Add copy-on-write storage in `03-mcp/transaction-mcp/`. Create the parent directory before the
-   temporary file, and add `npm run reset:mcp`.
-3. Create `03-mcp/claude-project/.claude/agents/transaction-agent.md`. Give it exactly
-   `mcp__transactions__get_transaction`, `mcp__transactions__update_transaction` and
-   `mcp__transactions__add_transaction`.
-4. Add `transaction-agent` to the SDK `agents` option and Claude Code agent configuration. Keep the
-   orchestrator's `allowedTools` free of write tools.
+   `03-mcp/transaction-mcp/server.js`. Use Zod input schemas.
+2. Save changes in a copy under `03-mcp/transaction-mcp/`.
+   Create the parent folder before you write the temporary file.
+   Add the `npm run reset:mcp` command.
+3. Create `03-mcp/claude-project/.claude/agents/transaction-agent.md`.
+   Give it exactly these tools: `get_transaction`, `update_transaction` and `add_transaction`.
+4. Add `transaction-agent` to the SDK `agents` option and the Claude Code agent files.
+   Keep write tools out of the orchestrator's `allowedTools`.
 
-**Done when:** a smoke test adds, updates and deletes a transaction in a fresh temporary store, while
-the workbook hash stays unchanged. The transaction agent looks up a transaction before it updates it.
+**Done when:** a smoke test adds, updates and deletes records in a new temporary store.
+Check that the workbook hash stays the same.
+Make `transaction-agent` look up a record before it writes.
 
 ### Part 2 · Add conditional approval hooks
 
-**How it works:** permissions have four layers: each agent's tool allowlist, the orchestrator's
-`allowedTools` and `permissionMode`, the `PreToolUse` hook, then a person. Reads pass without a prompt.
-An update to a transaction below €100 passes automatically. An update of €100 or more, an add, or a
-delete needs human approval. Keep the €100 threshold in one constant.
+**How it works.** Use four permission layers.
+Check each agent's tool list first.
+Then check the orchestrator's `allowedTools` and `permissionMode`.
+Next, run the `PreToolUse` hook.
+Ask a person last. Reads pass without a prompt.
+Allow updates below €100 without a prompt.
+Ask a person before larger updates, adds and deletes.
+Keep the €100 threshold in one constant.
 
 | Situation | Result |
 | --- | --- |
-| `risk-agent` tries a write | The tool is not in its allowlist, so the call is unavailable. |
-| `transaction-agent` updates a transaction below €100 | The hook allows it and `PostToolUse` writes an audit line. |
-| `transaction-agent` updates a transaction of €100 or more | SDK asks `y/N` in a TTY; interactive Claude Code asks; `claude -p` denies. |
-| An agent tries `delete_transaction` | No agent has the tool. If a caller reaches it, the hook requires human approval. |
-| A reviewer denies a write | Stop. Do not retry the write or delegate it again. |
+| `risk-agent` tries a write | The agent has no write tool. The call fails. |
+| `transaction-agent` updates a record below €100 | Allow the update. Write one audit line. |
+| `transaction-agent` updates a record at or above €100 | Ask in an SDK TTY or interactive Claude Code. Deny in `claude -p`. |
+| An agent calls `delete_transaction` | No agent has this tool. Ask a person if a caller reaches it. |
+| A reviewer denies a write | Stop. Do not retry or delegate the write. |
 
-**Demo (facilitator):** compare a small update with a large update. Show the audit line after the
-small update, then deny the large update and show that the agent stops.
+**Demo (facilitator).** Run a small update. Show its audit line.
+Run a large update. Deny it. Show that the agent stops.
 
 **Your turn:**
 
-1. Implement `03-mcp/hooks/transaction-guard.mjs` and register it for write tools in both backends.
-2. Let reads through silently. Validate known transaction IDs and allowed statuses before writes.
-3. Auto-allow updates below €100. Require approval for larger updates, adds and deletes.
-4. Append one JSON line to `participant-output/audit.jsonl` after each successful write.
-5. Tell the orchestrator and transaction agent that a denial is final.
+1. Add `03-mcp/hooks/transaction-guard.mjs`.
+   Register it for write tools in both backends.
+2. Allow reads without a prompt.
+   Check transaction IDs and statuses before writes.
+3. Allow updates below €100 without a prompt.
+   Ask a person before larger updates, adds and deletes.
+4. Add one JSON line to `participant-output/audit.jsonl` after each write.
+5. Tell the orchestrator and `transaction-agent` to stop after a denial.
 
-**Done when:** the offline hook check covers all five table rows. A denied write has the exact reason
+**Done when:** the offline hook check covers all five table rows.
+Use this exact reason when a person denies a write:
 `Denied by a human reviewer. Do not retry this write or delegate it; report it and stop.`
 
 ### Part 3 · Build the resolve workflow
 
-**How it works:** `npm run resolve -- MSG-0N` runs one chain: customer and transaction lookup,
-transaction-agent proposal, hook-gated write, then a reply draft in
-`03-mcp/claude-project/output/`. The slash command `/resolve-ticket` runs the same chain in Claude Code.
+**How it works.** Run `npm run resolve -- MSG-0N`.
+The workflow looks up the customer and transaction.
+Then `transaction-agent` proposes one update.
+The hook checks the write. The workflow saves a reply draft in `03-mcp/claude-project/output/`.
+Run `/resolve-ticket` in Claude Code to use the same workflow.
 
-**Demo (facilitator):** run `npm run resolve -- MSG-03 --backend sdk` with the training example
-`TX-1003: PENDING → COMPLETED`. Approve once, then deny once. The denial must not cause a second
-write attempt or a new delegate.
+**Demo (facilitator).** Run `npm run resolve -- MSG-03 --backend sdk`.
+Use `TX-1003` as a training target. Change `PENDING` to `COMPLETED`.
+Approve one run. Deny one run.
+Do not claim that TX-1003 belongs to the customer in MSG-03.
+Do not retry or ask another agent to write after a denial.
 
 **Your turn:**
 
 1. Add `npm run resolve -- MSG-0N [--backend sdk|claude-code] [--dry-run]`.
-2. Add `03-mcp/claude-project/.claude/commands/resolve-ticket.md` with the same fixed workflow.
-3. Run the workflow once with approval and once with denial. Check the working copy, audit log and
-   reply draft. Run `npm run reset:mcp` after the approved run.
+2. Add `03-mcp/claude-project/.claude/commands/resolve-ticket.md`.
+   Give it the same steps as the CLI.
+3. Run the workflow once with approval and once with denial.
+   Check the working copy, audit log and reply draft.
+   Run `npm run reset:mcp` after the approved run.
 
-**Done when:** the approved run records the update and writes a reply draft. The denied run makes no
-second write attempt, does not delegate a retry, and does not claim the update succeeded.
+**Done when:** the approved run records the update and saves a reply draft.
+The denied run makes no second write attempt.
+It does not ask another agent to retry or claim that the update succeeded.
 
-Run `npm run check:assignment` after your work. On Step 4 it reports the unfinished parts; the
-solution branch contains the reference implementation.
+Run `npm run check:assignment` after your work.
+Step 4 reports the parts that you have not done.
+The solution branch has a complete example.
 
 ## Wrap-up · recap round, bridge to Workshop 5
 

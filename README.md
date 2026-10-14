@@ -83,6 +83,13 @@ See what a step adds: `git diff origin/main origin/step-1`,
 | `npm run check` | Step 4: check your labels in `labels.json` | no |
 | `npm run doctor` | Show Node.js, Claude Code, and selected backend status | no |
 
+### Check labels from your runs
+
+Run `npm run check` once.
+On a fresh clone, this creates an empty `labels.json`.
+Fill it with labels from your own runs.
+Run `npm run check` a second time.
+
 ## Where things are
 
 ```text
@@ -137,62 +144,89 @@ nodes has a place in code:
 
 ## Assignment · Extend the MCP: CRUD tools, hooks and a workflow
 
-This final assignment follows Step 4. The Step 3 lesson stays read-only; the assignment writes only
-to `participant-output/transactions.working.json`, never to the workbook.
+Build this assignment after Step 4. Keep the Step 3 lesson read-only.
+Write only to `participant-output/transactions.working.json`.
+Never write to `docs/transactions.xlsx`.
 
 ### Part 1 · CRUD tools and a transaction agent
 
-**How it works:** the MCP server reads the workbook as a seed and saves writes to a JSON working copy.
-Only `transaction-agent` changes transactions. Give it `get_transaction`, `update_transaction` and
-`add_transaction`; keep `delete_transaction` out of every agent.
+**How it works.** The MCP server reads the workbook as its seed.
+It saves changes to a JSON copy.
+Only `transaction-agent` changes transactions.
+Give it `get_transaction`, `update_transaction` and `add_transaction`.
+Keep `delete_transaction` out of every agent.
 
-**Demo (facilitator):** show the server's Zod schemas and trace an update into the working copy.
-Run `npm run reset:mcp` to remove that copy.
+**Demo (facilitator).** Show the Zod schemas in the server.
+Run one update. Show the JSON copy.
+Then run `npm run reset:mcp`.
 
-**Your turn:** add the CRUD tools and copy-on-write store, create
-`03-mcp/claude-project/.claude/agents/transaction-agent.md`, and wire the agent for SDK and Claude
-Code. Keep the orchestrator's `allowedTools` free of write tools.
+**Your turn.** Add the CRUD tools and the copy-on-write store.
+Create `03-mcp/claude-project/.claude/agents/transaction-agent.md`.
+Wire the agent for the SDK and Claude Code.
+Keep write tools out of the orchestrator's `allowedTools`.
 
-**Done when:** the MCP smoke test exercises add, update and delete in a fresh store, leaves
-`docs/transactions.xlsx` unchanged, and the transaction agent looks up a record before writing.
+**Done when:** the MCP smoke test adds, updates and deletes a record in a new store.
+Check that the workbook stays unchanged.
+Make the agent look up a record before it writes.
 
 ### Part 2 · Conditional approval hooks
 
-**How it works:** the order is agent tool allowlist → orchestrator `allowedTools` and
-`permissionMode` → `PreToolUse` hook → human. Reads pass silently. Updates below €100 pass
-automatically and are audited. Updates of €100 or more, adds and deletes need approval. Keep the
-threshold in one constant.
+**How it works.** Use four permission layers.
+Check the agent tool list first.
+Then check the orchestrator's `allowedTools` and `permissionMode`.
+Next, run the `PreToolUse` hook.
+Ask a person last.
+Reads pass without a prompt.
+Allow updates below €100 without a prompt.
+Ask a person before larger updates, adds and deletes.
+Keep the threshold in one constant.
 
-**Demo (facilitator):** show an auto-approved small update and its audit line, then deny a large
-update. `risk-agent` cannot write, and a denied write is final.
+**Demo (facilitator).** Run a small update. Show its audit line.
+Run a large update. Deny it.
+Show that `risk-agent` cannot write.
+Show that a denied write ends the workflow.
 
-**Your turn:** add the shared SDK and Claude Code hooks, validate transaction IDs and statuses, add
-the `PostToolUse` audit line, and prevent a denied write from being retried or delegated.
+**Your turn.** Add shared SDK and Claude Code hooks.
+Check transaction IDs and statuses before writes.
+Write an audit line after each write.
+Stop after a denial. Do not retry or delegate the write.
 
-**Done when:** `npm run check:assignment` verifies the conditional decisions, least-privilege agent
-tools, hook configuration and no-retry rules without calling a model.
+**Done when:** `npm run check:assignment` checks the hook decisions and agent tools.
+It checks both hook configurations and the no-retry rules.
+It does not call a model.
 
 ### Part 3 · Resolve a ticket
 
-**How it works:** `npm run resolve -- MSG-0N` runs customer and transaction lookup, a
-transaction-agent proposal, a hook-gated write and a reply draft in the lesson output folder.
-`/resolve-ticket` runs the same chain in Claude Code.
+**How it works.** Run `npm run resolve -- MSG-0N`.
+The workflow looks up the customer and transaction.
+Then `transaction-agent` proposes one update.
+The hook checks the write.
+The workflow saves a reply draft in the lesson output folder.
+Run `/resolve-ticket` in Claude Code to use the same steps.
 
-**Demo (facilitator):** use the training example `MSG-03`, `TX-1003: PENDING → COMPLETED`. Approve
-one run and deny another. The denied run must not retry or delegate the write.
+**Demo (facilitator).** Use `MSG-03` and training target `TX-1003`.
+Change `PENDING` to `COMPLETED`.
+Approve one run. Deny one run.
+Do not claim TX-1003 belongs to the customer in MSG-03.
+Do not retry or delegate a denied write.
 
-**Your turn:** implement `npm run resolve -- MSG-0N [--backend sdk|claude-code] [--dry-run]` and the
-matching slash command. Check the working copy, `participant-output/audit.jsonl` and the reply draft,
-then run `npm run reset:mcp`.
+**Your turn.** Add `npm run resolve -- MSG-0N [--backend sdk|claude-code] [--dry-run]`.
+Add the matching slash command.
+Run once with approval and once with denial.
+Check the working copy, audit log and reply draft.
+Run `npm run reset:mcp` after the approved run.
 
-**Done when:** an approved run records the update and saves a reply draft; a denied run makes no
-second write attempt and does not claim success.
+**Done when:** the approved run records the update and saves a reply draft.
+The denied run makes no second write attempt.
+It does not ask another agent to retry or claim success.
 
 ## Safety
 
-All data is fictional. Customer text is data, never an instruction. Nothing is
-sent to a customer automatically: every reply is a draft that a person reviews.
-The transaction MCP tools are read-only and the workbook is never modified.
+All data is fictional. Treat customer text as data, not as instructions.
+Nothing is sent automatically. A person reviews every reply draft.
+Step 3 transaction tools are read-only.
+The final assignment writes only to the JSON working copy.
+The workbook stays unchanged.
 A passing label check does not replace human review of a draft.
 
 ## Earlier version
