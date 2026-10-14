@@ -138,7 +138,7 @@ index 0000000..ee27dcd
 +  additionalProperties: false,
 +};
 diff --git a/README.md b/README.md
-index 463a354..7c7f5e8 100644
+index 973db8e..4be62e6 100644
 --- a/README.md
 +++ b/README.md
 @@ -97,7 +97,8 @@ lib/chat.mjs                     interactive chat with optional session memory
@@ -183,7 +183,7 @@ index 0000000..85045c6
 +  return { description, prompt: match[2].trim(), tools };
 +}
 diff --git a/package.json b/package.json
-index 8e16999..c8d3d03 100644
+index 133faf2..e035d5a 100644
 --- a/package.json
 +++ b/package.json
 @@ -12,8 +12,9 @@

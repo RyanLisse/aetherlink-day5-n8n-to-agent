@@ -1177,7 +1177,10 @@ Do not change labels just to pass.
 
 **Goal:** add write tools after Step 4. Keep the Step 3 lesson read-only.
 
-### Part 1 · CRUD tools and a transaction agent
+Do the core first: Part 1 and Part 2 (about 35 minutes). Part 3 and Part 4 are stretch.
+Make CORE the room target. Use STRETCH for fast squads or homework.
+
+### Part 1 · CRUD tools and a transaction agent (core)
 
 **How it works:** the MCP reads the workbook and writes to a JSON copy. Only `transaction-agent` can
 change transactions. No agent gets `delete_transaction`.
@@ -1191,7 +1194,7 @@ agents read-only or tool-free.
 
 **Done when:** the smoke test covers add, update, delete and reset. The workbook stays unchanged.
 
-### Part 2 · Conditional approval hooks
+### Part 2 · Conditional approval hooks (core)
 
 **How it works:** check each agent's tool list, the orchestrator's `allowedTools`, the
 `permissionMode`, and then the `PreToolUse` hook. Reads pass without a prompt. Updates below €100 pass
@@ -1207,7 +1210,7 @@ line after each write. Stop after a denial. Do not retry or delegate the write.
 
 **Done when:** `npm run check:assignment` checks tool access, hook setup and all five decisions.
 
-### Part 3 · Add drafts and a fraud-check agent
+### Part 3 · Add drafts and a fraud-check agent (stretch)
 
 **How it works:** `save_reply_draft` saves a Markdown draft with a review header. It replaces a
 draft with the same message ID. `customer-reply-agent` gets only this tool. `fraud-check-agent` gets
@@ -1226,7 +1229,7 @@ Wire both agents in
 **Done when:** a test saves and replaces a draft in a temporary folder. It checks the review header.
 The fraud agent has only read tools.
 
-### Part 4 · Ask a person and resolve a ticket
+### Part 4 · Ask a person and resolve a ticket (stretch)
 
 **How it works:** use the built-in `AskUserQuestion` tool. Keep it in SDK `tools`, not in
 `allowedTools`. Do not build a custom MCP question tool.
@@ -1264,7 +1267,12 @@ Add handler and dry-run tests. Extend `scripts/check-assignment.mjs` and its tes
 **Done when:** the dry run lists each step and branch. The handler tests cover a TTY answer and no
 TTY. The checker passes on the solution branch.
 
-Run `npm run check:assignment` on Step 4 to see missing tasks.
+Run `npm run check:assignment` after Part 2 and after Part 4.
+If core items remain, the check exits 1. Fix them first.
+If core passes with open stretch items, the check exits 0. Stretch is optional.
+If both parts pass, the check exits 0.
+Run `npm run check:assignment -- --strict` to require stretch. Open stretch items then exit 1.
+Run the check on Step 4 to see missing tasks.
 Run it on `solution` to see the complete reference work.
 
 ---

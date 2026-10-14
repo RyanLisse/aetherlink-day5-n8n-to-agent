@@ -79,7 +79,7 @@ index 0000000..edb0bb3
 +  additionalProperties: false,
 +};
 diff --git a/README.md b/README.md
-index 5fb6b13..463a354 100644
+index fde2312..973db8e 100644
 --- a/README.md
 +++ b/README.md
 @@ -74,7 +74,7 @@ See what a step adds: `git diff origin/main origin/step-1`,

@@ -1,4 +1,4 @@
-# Workshop 4 · Support agents with Claude Code and the Agent SDK
+# Workshop 4 · From n8n to Claude Agents SDK
 
 AetherLink Academy Workshop 4. In Workshop 3 you built a support-triage flow in
 n8n with Maarten: Switch, Chat trigger, Simple Memory, AI Agent, Structured Output

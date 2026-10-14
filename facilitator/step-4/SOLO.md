@@ -804,11 +804,13 @@ More stretch:
 
 ## Assignment · Extend the MCP: CRUD tools, hooks and a workflow
 
+Do the core first: Part 1 and Part 2 (about 35 minutes). Part 3 and Part 4 are stretch.
+
 Build this assignment after Step 4. Keep the Step 3 lesson read-only.
 Write only to `participant-output/transactions.working.json`.
 Never write to `docs/transactions.xlsx`.
 
-### Part 1 · Add CRUD tools and a transaction agent
+### Part 1 · Add CRUD tools and a transaction agent (core)
 
 **How it works.** The MCP server reads the workbook as its seed. It saves changes to a JSON copy.
 Set `TRANSACTIONS_STORE` to use another copy. Give `transaction-agent` only the tools it needs.
@@ -835,7 +837,7 @@ Run one update. Show the JSON copy. Then run `npm run reset:mcp`.
 Check that the workbook hash stays the same.
 Make `transaction-agent` look up a record before it writes.
 
-### Part 2 · Add conditional approval hooks
+### Part 2 · Add conditional approval hooks (core)
 
 **How it works.** Use four permission layers.
 Check each agent's tool list first.
@@ -872,7 +874,7 @@ Run a large update. Deny it. Show that the agent stops.
 Use this exact reason when a person denies a write:
 `Denied by a human reviewer. Do not retry this write or delegate it; report it and stop.`
 
-### Part 3 · Add drafts and a fraud-check agent
+### Part 3 · Add drafts and a fraud-check agent (stretch)
 
 **How it works.** `save_reply_draft` saves a Markdown draft.
 The file starts with `DRAFT - a person reviews this before sending.`
@@ -918,7 +920,7 @@ Edit `reset.mjs` to remove drafts with the working copy.
 Check the required header and overwrite behavior.
 Check that the fraud agent has only read tools.
 
-### Part 4 · Ask a person and resolve a ticket
+### Part 4 · Ask a person and resolve a ticket (stretch)
 
 **How it works.** Use the built-in `AskUserQuestion` tool.
 Do not build a custom MCP tool for questions.
@@ -962,6 +964,15 @@ Edit `check-assignment.mjs` to check the rules without a model.
 The SDK test checks a TTY answer and a no-TTY denial.
 `npm run check:assignment` passes on the solution branch.
 Run `npm run check:assignment` on Step 4 to see missing tasks.
+
+### Check your work
+
+Run `npm run check:assignment` after Part 2 and again after Part 4.
+
+- If core items remain, the check exits 1. Fix them first.
+- If core passes with open stretch items, the check exits 0. Stretch is optional.
+- If both parts pass, the check reports success and exits 0.
+- Run `npm run check:assignment -- --strict` to require stretch. Open stretch items then exit 1.
 
 ## Wrap-up · recap round, bridge to Workshop 5
 

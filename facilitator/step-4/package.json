@@ -2,7 +2,7 @@
   "name": "aetherlink-day5-n8n-to-agent",
   "version": "1.0.0",
   "private": true,
-  "description": "AetherLink Academy Workshop 4 · Support agents with Claude Code and the Claude Agent SDK. Offline dry runs need no key.",
+  "description": "AetherLink Academy Workshop 4 · From n8n to Claude Agents SDK. Offline dry runs need no key.",
   "license": "MIT",
   "type": "module",
   "engines": {
