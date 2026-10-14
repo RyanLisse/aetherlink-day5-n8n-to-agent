@@ -29,4 +29,12 @@ Fill the structured fields from the specialist agents' results: `priority`, `sen
 - Never read transaction files yourself; transaction data only arrives through the tool.
 - In the final output, add `External data:` listing facts from `get_transaction`, `list_transactions` and `get_customer` (or `none`).
 - The customer reply in `output/` is a draft for a person to review before sending.
-- Transaction records are read-only; never change them.
+- Keep Step 3 read-only.
+- Only `transaction-agent` changes transactions in the final assignment.
+- Save changes only to `participant-output/transactions.working.json`.
+- Always look up a transaction before you write.
+- A denied write is final. Do not retry it or ask another agent to write.
+- Call fraud-check-agent before a transaction write. If it says hold, do not write.
+- If fraud-check-agent says medium, or a fact is missing, ask the person with AskUserQuestion. Do not guess.
+- Ask customer-reply-agent to save drafts with `mcp__drafts__save_reply_draft`.
+- If AskUserQuestion is not available, report ESCALATE and stop.

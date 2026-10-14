@@ -173,6 +173,29 @@ function checkCoreSdkOptions(options) {
     if (name !== 'transaction-agent' && (agent.tools ?? []).some((tool) => writeTools.includes(tool))) {
       writers.add(name);
     }
+    if (name !== 'customer-reply-agent' && agent.tools?.includes(draftTool)) {
+      issues.push(`Remove ${draftTool} from ${name}.`);
+    }
+    if (agent.tools?.includes(questionTool)) {
+      issues.push(`Remove ${questionTool} from ${name}.`);
+    }
+    const agentFile = read(`03-mcp/claude-project/.claude/agents/${name}.md`) ?? '';
+    if (/^tools:.*\bAskUserQuestion\b/m.test(agentFile)) {
+      issues.push(`Remove ${questionTool} from ${name}.`);
+    }
+  }
+  if ((options.agents?.['customer-reply-agent']?.tools ?? []).some((tool) => tool.startsWith('mcp__transactions__'))) {
+    issues.push('Remove transaction tools from customer-reply-agent.');
+  }
+  if (JSON.stringify([...(options.agents?.['fraud-check-agent']?.tools ?? [])].sort()) !== JSON.stringify([...fraudCheckAgentTools].sort())) {
+    issues.push(`Give SDK fraud-check-agent these read tools only: ${fraudCheckAgentTools.join(', ')}.`);
+  }
+  if (JSON.stringify([...(options.agents?.['customer-reply-agent']?.tools ?? [])].sort()) !== JSON.stringify([draftTool])) {
+    issues.push(`Give SDK customer-reply-agent only ${draftTool}.`);
+  }
+  const cliOptions = buildResolveOptions({ backend: 'claude-code' });
+  if (cliOptions.allowedTools?.includes(questionTool) || cliOptions.tools?.includes(questionTool)) {
+    issues.push('Keep AskUserQuestion out of the claude -p tool list.');
   }
   for (const { name, text } of agentFiles()) {
     if (name !== 'transaction-agent' && readAgentTools(text).some((tool) => writeTools.includes(tool))) {

@@ -157,6 +157,7 @@ It saves changes to a JSON copy.
 Only `transaction-agent` changes transactions.
 Give it `get_transaction`, `update_transaction` and `add_transaction`.
 Keep `delete_transaction` out of every agent.
+Give `customer-reply-agent` only the draft tool.
 
 **Demo (facilitator).** Show the Zod schemas in the server.
 Run one update. Show the JSON copy.
@@ -203,14 +204,15 @@ It does not call a model.
 
 ### Part 3 · Add drafts and a fraud-check agent (stretch)
 
-**How it works.** `save_reply_draft` saves a Markdown draft with a review header.
-It replaces an earlier draft with the same message ID.
-`customer-reply-agent` gets only the draft tool.
+**How it works.** `save_reply_draft` saves a Markdown file in `participant-output/drafts/`.
+The file starts with a review header.
+`customer-reply-agent` gets only this tool.
 `fraud-check-agent` gets only read tools.
-Stop before a write when hold is true or risk is high.
+It returns fraud risk, signals and a hold decision.
+Stop before a write when it returns high risk or hold.
 
 **Demo (facilitator).** Save a draft for `MSG-03`.
-Show the header and path.
+Show the file header and path.
 Show the fraud agent's JSON result.
 
 **Your turn.** Add `drafts-server.js` and the `save_reply_draft` tool.
@@ -222,7 +224,7 @@ Wire both agents in `03-mcp/agents.mjs`.
 Let the hook allow and audit draft saves.
 
 **Done when:** a test saves and replaces a draft in a temporary folder.
-It checks the review header.
+The test checks the review header.
 The fraud agent has only read tools.
 
 ### Part 4 · Ask a person and resolve a ticket (stretch)
@@ -240,25 +242,25 @@ Do not retry or delegate a denied write.
 
 **Your turn.** Add `ask-human.mjs` for the SDK `canUseTool` callback.
 Give `AskUserQuestion` to the orchestrator only.
-Add the rules to `CLAUDE.md`.
+Add the fraud and question rules to `CLAUDE.md`.
 Add `npm run resolve -- MSG-0N [--backend sdk|claude-code] [--dry-run]`.
 Add `.claude/commands/resolve-ticket.md` with the same workflow.
-Call `fraud-check-agent` before a write.
+Call the fraud agent before each write.
 Stop with `ESCALATE` when hold is true or risk is high.
 Save the reply with `customer-reply-agent`.
-Add handler and dry-run tests.
+Add tests for the question handler and resolve dry run.
 Extend `scripts/check-assignment.mjs` and its tests.
-
 **Where and why.** `ask-human.mjs` handles SDK questions.
 `options.mjs` gives the tool to the orchestrator.
-`resolve.mjs` runs the workflow.
+`resolve.mjs` runs the ticket workflow.
 `resolve-ticket.md` defines the interactive command.
 `CLAUDE.md` states the agent rules.
 `check-assignment.mjs` checks the rules without a model.
 
 **Done when:** the dry run lists each step and branch.
-The handler tests cover a TTY answer and no TTY.
-The checker passes on the solution branch.
+The SDK test checks a TTY answer and a no-TTY denial.
+The assignment checker passes on the solution branch.
+Run it on Step 4 to see the missing tasks.
 
 ### Check your work
 

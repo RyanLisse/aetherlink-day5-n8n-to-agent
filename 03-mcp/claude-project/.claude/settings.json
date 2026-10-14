@@ -1,0 +1,26 @@
+{
+  "hooks": {
+    "PreToolUse": [
+      {
+        "matcher": "mcp__transactions__(add|update|delete)_transaction|mcp__drafts__save_reply_draft",
+        "hooks": [
+          {
+            "type": "command",
+            "command": "node ../hooks/transaction-guard.mjs pre"
+          }
+        ]
+      }
+    ],
+    "PostToolUse": [
+      {
+        "matcher": "mcp__transactions__(add|update|delete)_transaction|mcp__drafts__save_reply_draft",
+        "hooks": [
+          {
+            "type": "command",
+            "command": "node ../hooks/transaction-guard.mjs post"
+          }
+        ]
+      }
+    ]
+  }
+}
