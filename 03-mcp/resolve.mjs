@@ -19,7 +19,7 @@ const outputSchema = {
     fraud_signals: { type: 'array', items: { type: 'string' } },
     hold: { type: 'boolean' },
     summary: { type: 'string' },
-    customer_reply: { type: 'string' },
+    customer_reply: { type: ['string', 'null'] },
   },
   required: ['write_status', 'transaction_id', 'fraud_risk', 'fraud_signals', 'hold', 'summary', 'customer_reply'],
 };
@@ -88,6 +88,8 @@ Use these steps:
 23. Tell customer-reply-agent not to promise future help unless a tool result confirms it.
 24. Tell customer-reply-agent not to claim or promise a refund, release, or date.
 25. Do not claim success if the write was denied.
+26. When you stop with ESCALATE, or the hook denies the write, set customer_reply to null.
+27. Never write customer_reply yourself. Copy the text that customer-reply-agent saved, or set it to null.
 
 Return write_status, transaction_id, fraud_risk, fraud_signals, hold, summary, and customer_reply.`;
 const options = buildResolveOptions({ backend });
@@ -96,7 +98,7 @@ const result = await runQuery({
   prompt,
   options,
   dryRun,
-  dryRunNote: 'Look up the customer and the transaction. Run fraud-check-agent before a write. Stop with ESCALATE when hold is true or risk is high. Ask one question when risk is medium or a fact is missing. Continue only after the person selects Continue. Stop with ESCALATE after any other answer or a denied write. Record the ticket in issue_details as the only allowed customer claim. Change status only when the ticket and tool results support a new status. Otherwise, keep the current status exactly. Let the hook check the write. Save a draft with customer-reply-agent. Use only facts from the ticket and tool results. State each transaction status exactly as the tool result shows it. Do not say that the team reviews the case unless a tool result confirms it. Do not promise future help unless a tool result confirms it. Do not claim or promise a refund, release, or date.',
+  dryRunNote: 'Look up the customer and the transaction. Run fraud-check-agent before a write. Stop with ESCALATE when hold is true or risk is high. Ask one question when risk is medium or a fact is missing. Continue only after the person selects Continue. Stop with ESCALATE after any other answer or a denied write. Record the ticket in issue_details as the only allowed customer claim. Change status only when the ticket and tool results support a new status. Otherwise, keep the current status exactly. Let the hook check the write. Save a draft with customer-reply-agent. Use only facts from the ticket and tool results. State each transaction status exactly as the tool result shows it. Do not say that the team reviews the case unless a tool result confirms it. Do not promise future help unless a tool result confirms it. Do not claim or promise a refund, release, or date. On ESCALATE or a denied write, set customer_reply to null. Never write customer_reply yourself.',
   backendArgument: backend,
 });
 

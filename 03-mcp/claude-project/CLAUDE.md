@@ -44,3 +44,4 @@ Fill the structured fields from the specialist agents' results: `priority`, `sen
 - Do not promise future help unless a tool result confirms it.
 - Do not claim or promise a refund, release, or date.
 - If AskUserQuestion is not available, report ESCALATE and stop.
+- On ESCALATE or a denied write, set customer_reply to null. Do not tell the customer about teams, reviews or next steps.

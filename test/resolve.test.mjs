@@ -25,6 +25,8 @@ test('resolve dry run prints the fixed workflow without a model call', () => {
   );
   assert.match(resolvePrompt, /record the ticket in issue_details/);
   assert.match(resolvePrompt, /Keep current issue_details and append one claim: \| MSG-0N \(customer report\):/);
+  assert.match(resolvePrompt, /set customer_reply to null/);
+  assert.match(resolvePrompt, /customer_reply: \{ type: \['string', 'null'\] \}/);
   assert.match(resolveCommand, /Append one claim with this format: ` \| MSG-0N \(customer report\): <one short sentence of what the customer says>/);
   assert.match(resolvePrompt, /Change status only when the ticket and tool results support a new status/);
   assert.match(resolvePrompt, /Otherwise, keep the current status exactly/);
@@ -36,6 +38,7 @@ test('resolve dry run prints the fixed workflow without a model call', () => {
   assert.match(result.stdout, /Do not say that the team reviews the case unless a tool result confirms it/);
   assert.match(result.stdout, /Do not promise future help unless a tool result confirms it/);
   assert.match(result.stdout, /Do not claim or promise a refund, release, or date/);
+  assert.match(result.stdout, /On ESCALATE or a denied write, set customer_reply to null/);
   assert.doesNotMatch(result.stdout, /TX-1003|training target/);
   assert.match(result.stdout, /dry run — no model call/);
 });
